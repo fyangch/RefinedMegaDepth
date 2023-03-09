@@ -1,0 +1,2 @@
+# if we use the pre-trained segmentation models from http://sceneparsing.csail.mit.edu/model/pytorch/
+# we also need to include the corresponding code, see https://github.com/CSAILVision/semantic-segmentation-pytorch/tree/master/mit_semseg/models
