@@ -4,8 +4,8 @@ import numpy as np
 
 from src.semantic_filtering import *
 from src.image_processing import *
-from src.utils import *
-
+from src.models.utils import get_segmentation_model
+from src.utils.read_write_dense import read_array
 
 def refine_depth_maps(
     image_dir: str,
@@ -15,11 +15,11 @@ def refine_depth_maps(
 ):
     """ TODO """
 
-    model = get_segmentation_model() # TODO
+    model = get_segmentation_model("TODO") # TODO
 
     for image_path in os.listdir(image_dir):
-        depth_map_path = os.path(depth_map_dir, "TODO") # TODO: set correct path
-        depth_map = read_depth_map(depth_map_path)
+        depth_map_path = os.path.join(depth_map_dir, "TODO") # TODO: set correct path
+        depth_map = read_array(depth_map_path)
         segmentation_map = get_segmentation_map(image_path, model)
 
         depth_map = filter_unstable_depths(depth_map)
