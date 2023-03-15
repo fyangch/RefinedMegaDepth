@@ -32,3 +32,8 @@ repos:
           --profile=black,
           --atomic
         ]
+
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.1.1
+    hooks:
+      - id: mypy

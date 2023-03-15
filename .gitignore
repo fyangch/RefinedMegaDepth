@@ -1,3 +1,9 @@
+# folders
+data/**
+**.DS_Store
+colmap/**
+pycolmap/**
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
