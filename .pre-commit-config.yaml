@@ -20,7 +20,7 @@ repos:
         --max-line-length=100,
         --docstring-convention=google
       ]
-      exclude: ^(venv/|docs/)
+      exclude: ^(venv/|docs/|.*__init__.py)
       types: ['python']
 
   - repo: https://github.com/pycqa/isort
