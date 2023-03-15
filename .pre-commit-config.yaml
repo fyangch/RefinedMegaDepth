@@ -1,0 +1,34 @@
+default_stages: [commit]
+default_language_version:
+  python: python3.9
+repos:
+  - repo: https://github.com/psf/black
+    rev: 23.1.0
+    hooks:
+    - id: black
+      args: [
+        --line-length=100, 
+      ]
+      exclude: ^(venv/|docs/)
+      types: ['python']
+  - repo: https://github.com/PyCQA/flake8
+    rev: 6.0.0
+    hooks:
+    - id: flake8
+      additional_dependencies: [flake8-docstrings]
+      args: [
+        --max-line-length=100,
+        --docstring-convention=google
+      ]
+      exclude: ^(venv/|docs/)
+      types: ['python']
+
+  - repo: https://github.com/pycqa/isort
+    rev: 5.12.0
+    hooks:
+      - id: isort
+        args: [
+          --line-length=100,
+          --profile=black,
+          --atomic
+        ]
