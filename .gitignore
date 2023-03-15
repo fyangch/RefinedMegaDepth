@@ -3,6 +3,7 @@ data/**
 **.DS_Store
 colmap/**
 pycolmap/**
+external_dependencies/**
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

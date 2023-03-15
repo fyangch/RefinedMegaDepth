@@ -1,3 +1,4 @@
+cd external_dependencies
 git clone --recursive git@github.com:colmap/pycolmap.git
 cd pycolmap
 cd pipeline
@@ -8,3 +9,4 @@ cd ..
 export CMAKE_PREFIX_PATH="/opt/homebrew/opt/qt@5/lib/cmake/Qt5"
 export CGAL_DATA_DIR="/opt/homebrew/Caskroom/miniforge/base/envs/${CONDA_DEFAULT_ENV}/lib/cmake/CGAL"
 pip install -v .
+cd ../..
