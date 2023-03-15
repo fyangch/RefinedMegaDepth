@@ -2,7 +2,7 @@
 import logging
 
 import pycolmap
-from mega_depth.utils.utils import setup
+from megadepth.utils.utils import setup
 
 
 def main():

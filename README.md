@@ -12,7 +12,43 @@ Our project aims to systematically address these problems to establish a refined
 | **Felix Yang**       | fyang@student.ethz.ch   |
 
 # Setup
-### Apple M1
+
+## Linux
+Make sure that you have [conda](https://docs.conda.io/en/latest/miniconda.html) or [pip](https://pip.pypa.io/en/stable/installing/) installed.
+
+### Pip
+Make sure that you have python=3.9 installed. Create a new virtual environment using 
+```bash
+python3 -m venv venv
+```
+
+Activate the environment:
+```bash
+source venv/bin/activate
+```
+
+Install the dependencies:
+```bash
+make install_pip
+```
+
+### Conda
+Crate a new conda environment using python=3.9:
+```bash
+conda create -n megadepth python=3.9
+```
+
+Activate the environment:
+```bash
+conda activate megadepth
+```
+
+Install the dependencies:
+```bash
+make install_conda
+```
+
+## Apple M1
 Make sure you have [homebrew](https://brew.sh/) as well as [miniforge](https://github.com/conda-forge/miniforge) installed. Create a new conda environment using python=3.9:
 ```bash
 conda create -n megadepth python=3.9

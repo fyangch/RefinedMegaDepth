@@ -11,11 +11,20 @@ install_pycolmap_m1:
 install_colmap_m1:
 	. scripts/install_colmap_m1.sh
 
-install_requirements:
+install_requirements_conda:
 	conda install --file requirements.txt
 	conda install black flake8 isort mypy pre-commit
+
+install_requirements_pip:
+	which pip
+	pip install -r requirements.txt
+	pip install black flake8 isort mypy pre-commit
 
 install_precommit:
 	pre-commit install --hook-type pre-commit
 
-install_m1: install_colmap_m1 install_pycolmap_m1 install_requirements
+install_m1: install_colmap_m1 install_pycolmap_m1 install_requirements_conda
+
+install_conda: install_requirements_conda install_precommit
+
+install_pip: install_requirements_pip install_precommit

@@ -2,18 +2,18 @@
 
 import os
 
-from mega_depth.models.models import get_segmentation_model
-from mega_depth.pipeline.postprocessing.image_processing import (
+from megadepth.models.models import get_segmentation_model
+from megadepth.pipeline.postprocessing.image_processing import (
     erode_and_remove,
     filter_unstable_depths,
 )
-from mega_depth.pipeline.postprocessing.semantic_filtering import (
+from megadepth.pipeline.postprocessing.semantic_filtering import (
     apply_semantic_filtering,
     get_ordinal_labels,
     get_segmentation_map,
     is_selfie_image,
 )
-from mega_depth.utils.read_write_dense import read_array
+from megadepth.utils.read_write_dense import read_array
 
 
 def refine_depth_maps(
