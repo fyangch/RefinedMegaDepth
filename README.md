@@ -63,3 +63,17 @@ Install the dependencies:
 ```bash
 make install_m1
 ```
+
+## Install repository
+
+```pip install -e .```
+
+Maybe we also need to do this:
+1. Install `build` and `twine` packages from pip:
+   ```shell
+   pip install build twine 
+   ``` 
+2. Build the package:
+   ```shell
+   python -m build
+   ``` 
