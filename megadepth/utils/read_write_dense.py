@@ -34,6 +34,7 @@ POSSIBILITY OF SUCH DAMAGE.
 Author: Johannes L. Schoenberger (jsch-at-demuc-dot-de)
 """
 
+# TODO: move everything to utils/io.py
 import argparse
 import os
 import struct
