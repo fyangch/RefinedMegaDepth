@@ -1,18 +1,23 @@
 """Functions to compute the overlap metric between a list of images."""
-from typing import List
+
 
 import numpy as np
+import pycolmap
 
 
 # TODO: Change function signature if necessary
-def overlap(images: List[np.ndarray], depth_maps: List[np.ndarray]) -> np.ndarray:
+def overlap(reconstruction: pycolmap.Reconstruction) -> np.ndarray:
     """Computes the overlap metric between a list of images.
 
     Args:
-        images (List[np.ndarray]): List of images.
-        depth_maps (List[np.ndarray]): List of depth maps.
+        reconstruction (pycolmap.Reconstruction): Reconstruction object.
 
     Returns:
-        float: Overlap metric.
+        np.ndarray: Array of shape (N, N) with the overlap metric between each pair of images.
     """
+    # use image, camera, and 3D point functions from pycolmap
+    # images = reconstruction.images
+    # cameras = reconstruction.cameras
+    # points3D = reconstruction.points3D
+
     raise NotImplementedError()
