@@ -20,8 +20,11 @@ install_requirements_pip:
 install_precommit:
 	pre-commit install --hook-type pre-commit
 
-install_m1: create_data_folders install_external_deps_m1 install_requirements_conda
+install_md:
+	pip install -e .
 
-install_conda: install_requirements_conda install_precommit
+install_m1: create_data_folders install_external_deps_m1 install_requirements_conda install_md
 
-install_pip: install_requirements_pip install_precommit
+install_conda: install_requirements_conda install_precommit install_md
+
+install_pip: install_requirements_pip install_precommit install_md
