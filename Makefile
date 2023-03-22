@@ -1,9 +1,11 @@
 create_data_folders:
-	mkdir -p data/00_raw
-	mkdir -p data/01_processed
-	mkdir -p data/02_sparse_model
-	mkdir -p data/03_dense_model
-	mkdir -p data/04_results
+	mkdir -p data/00_images
+	mkdir -p data/01_features
+	mkdir -p data/02_matches
+	mkdir -p data/03_sparse
+	mkdir -p data/04_dense
+	mkdir -p data/05_metrics
+	mkdir -p data/06_results
 	mkdir -p external_dependencies
 
 install_external_deps_m1: 
