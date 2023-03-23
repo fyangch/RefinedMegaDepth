@@ -2,7 +2,7 @@
 
 import datetime
 import logging
-from timeit import timeit
+import time
 
 from megadepth.metrics.metadata import collect_metrics
 from megadepth.pipeline import Pipeline
@@ -12,7 +12,7 @@ from megadepth.utils.utils import DataPaths, setup
 
 def main():
     """Run the mega depth pipeline."""
-    start = timeit()
+    start = time.time()
 
     args = setup()
     paths = DataPaths(args)
@@ -38,7 +38,7 @@ def main():
 
     collect_metrics(paths, args, model_type=ModelType.SPARSE)
 
-    end = timeit()
+    end = time.time()
     logging.info(f"Total time: {datetime.timedelta(seconds=end - start)}")
 
 
