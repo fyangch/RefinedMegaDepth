@@ -17,15 +17,27 @@ def setup() -> argparse.Namespace:
     Returns:
         The parsed command line arguments.
     """
-    # Parse command line arguments.
+    args = setup_args()
+    setup_logger(args)
+
+    logging.debug("Command line arguments:")
+    for arg, val in vars(args).items():
+        logging.debug(f"\t{arg}: {val}")
+
+    return args
+
+
+def setup_args() -> argparse.Namespace:
+    """Setup the command line arguments.
+
+    Returns:
+        The parsed command line arguments.
+    """
     parser = argparse.ArgumentParser()
 
     # DATA RELATED ARGUMENTS
     parser.add_argument(
-        "--data_path",
-        type=Path,
-        default="data",
-        help="Path to the data directory.",
+        "--data_path", type=Path, default="data", help="Path to the data directory."
     )
     parser.add_argument(
         "--scene",
@@ -136,9 +148,15 @@ def setup() -> argparse.Namespace:
         help="Specify verbosity.",
     )
 
-    args = parser.parse_args()
+    return parser.parse_args()
 
-    # Setup logging.
+
+def setup_logger(args: argparse.Namespace) -> None:
+    """Setup the logger.
+
+    Args:
+        args (argparse.Namespace): The parsed command line arguments.
+    """
     if args.log_dir:
         if not os.path.exists(args.log_dir):
             os.makedirs(args.log_dir)
@@ -153,12 +171,6 @@ def setup() -> argparse.Namespace:
         level=args.log_level,
         filename=log_file,
     )
-
-    logging.debug("Command line arguments:")
-    for arg, val in vars(args).items():
-        logging.debug(f"\t{arg}: {val}")
-
-    return args
 
 
 def get_configs(args: argparse.Namespace) -> dict:
