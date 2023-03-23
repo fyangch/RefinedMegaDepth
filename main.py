@@ -1,5 +1,9 @@
 """This project is a re-implementation of the MegaDepth pipeline."""
 
+import datetime
+import logging
+import timeit
+
 from megadepth.metrics.metadata import collect_metrics
 from megadepth.pipeline import Pipeline
 from megadepth.utils.enums import ModelType
@@ -8,6 +12,7 @@ from megadepth.utils.utils import DataPaths, setup
 
 def main():
     """Run the mega depth pipeline."""
+    start = timeit.now()
     args = setup()
     paths = DataPaths(args)
 
@@ -31,6 +36,9 @@ def main():
     # pipeline.run() # -> run all steps
 
     collect_metrics(paths, args, model_type=ModelType.SPARSE)
+
+    end = timeit.now()
+    logging.info(f"Total time: {datetime.timedelta(seconds=end - start)}")
 
 
 if __name__ == "__main__":

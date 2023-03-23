@@ -38,6 +38,7 @@ def collect_metrics(
 
     # add pipeline information
     metrics["scene"] = str(args.scene)
+    metrics["model_name"] = paths.model_name
     metrics["retrieval"] = args.retrieval
     metrics["n_retrieval_matches"] = args.n_retrieval_matches
     metrics["features"] = args.features
@@ -73,3 +74,42 @@ def collect_sparse(reconstruction: pycolmap.Reconstruction) -> dict[str, Any]:
         "mean_obs_per_reg_image": reconstruction.compute_mean_observations_per_reg_image(),
         "mean_track_length": reconstruction.compute_mean_track_length(),
     }
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--data_path", type=str, required=True)
+    parser.add_argument("--scene", type=str, required=True)
+    parser.add_argument("--model_name", type=str, required=True)
+    parser.add_argument(
+        "--model_type",
+        type=str,
+        choices=[m.value for m in ModelType],
+        default=ModelType.SPARSE.value,
+    )
+    args = parser.parse_args()
+
+    model_path = os.path.join(args.data_path, args.scene, args.model_type, args.model_name)
+    model = pycolmap.Reconstruction(model_path)
+
+    if args.model_type == ModelType.SPARSE.value:
+        metrics = collect_sparse(model)
+    elif args.model_type == ModelType.DENSE.value:
+        raise NotImplementedError
+    else:
+        raise ValueError(f"Unknown model type: {args.model_type}")
+
+    metrics["scene"] = args.scene
+    metrics["model_name"] = args.model_name
+
+    print("Metrics:")
+    for key, value in metrics.items():
+        print(f"{key}: {value}")
+
+    metrics_path = os.path.join(args.data_path, args.scene, "metrics", args.model_name)
+    if not os.path.exists(metrics_path):
+        os.makedirs(metrics_path)
+
+    timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    with open(os.path.join(metrics_path, f"{args.model_type}-{timestamp}.json"), "w") as f:
+        json.dump(metrics, f, indent=4)
