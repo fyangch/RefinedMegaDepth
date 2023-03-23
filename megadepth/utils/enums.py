@@ -20,7 +20,7 @@ class Features(Enum):
     """Enum for the different feature types."""
 
     SIFT = "sift"
-    SUPERPOINT = "superpoint_aachen"
+    SUPERPOINT_MAX = "superpoint_max"
 
 
 class Matcher(Enum):

@@ -33,6 +33,9 @@ class Pipeline:
         logging.debug(f"Retrieval config: {self.configs['retrieval']}")
         logging.debug(f"Storing retrieval features at {self.paths.features_retrieval}")
 
+        # use: pairs from poses top 20, 30
+        # netvlad cosplace
+
         extract_features.main(
             conf=self.configs["retrieval"],
             image_dir=self.paths.images,

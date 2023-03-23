@@ -34,45 +34,45 @@ def setup() -> argparse.Namespace:
         help="The scene to be processed.",
     )
     parser.add_argument(
-        "--image_path",
+        "--image_dir",
         type=Path,
-        default="00_images",
+        default="images",
         help="Path to the images.",
     )
     parser.add_argument(
-        "--features_path",
+        "--features_dir",
         type=Path,
-        default="01_features",
+        default="features",
         help="Path to the metadata.",
     )
     parser.add_argument(
-        "--matches_path",
+        "--matches_dir",
         type=Path,
-        default="02_matches",
+        default="matches",
         help="Path to the sparse model.",
     )
     parser.add_argument(
-        "--sparse_path",
+        "--sparse_dir",
         type=Path,
-        default="03_sparse",
+        default="sparse",
         help="Path to the sparse model.",
     )
     parser.add_argument(
-        "--dense_path",
+        "--stereo_dir",
         type=Path,
-        default="04_dense",
+        default="stereo",
         help="Path to the dense model.",
     )
     parser.add_argument(
-        "--metrics_path",
+        "--metrics_dir",
         type=Path,
-        default="05_metrics",
+        default="metrics",
         help="Path to the metrics.",
     )
     parser.add_argument(
-        "--results_path",
+        "--results_dir",
         type=Path,
-        default="04_results",
+        default="results",
         help="Path to the results.",
     )
 
@@ -88,7 +88,7 @@ def setup() -> argparse.Namespace:
     parser.add_argument(
         "--n_retrieval_matches",
         type=int,
-        default=5,
+        default=50,
         help="The number of retrieval matches. 0 for exhaustive matching.",
     )
 
@@ -106,6 +106,13 @@ def setup() -> argparse.Namespace:
         choices=[m.value for m in Matcher],
         default=Matcher.NN_RATIO.value,
         help="The matcher used in the model.",
+    )
+
+    # PIPELINE RELATED ARGUMENTS
+    parser.add_argument(
+        "--evaluate",
+        action="store_true",
+        help="Evaluate the pipeline.",
     )
 
     # LOGGING RELATED ARGUMENTS
@@ -180,50 +187,47 @@ class DataPaths:
             args (argparse.Namespace): The parsed command line arguments.
         """
         # data
-        self.data = Path(args.data_path)
+        self.data = Path(os.path.join(args.data_path, args.scene))
+
+        # file names
         self.model_name = f"{args.features}-{args.matcher}"
-
-        self.images = Path(os.path.join(self.data, args.image_path, args.scene))
-
-        # features
-        self.features = Path(
-            os.path.join(self.data, args.features_path, args.scene, f"{args.features}.h5")
-        )
 
         retrieval_name = f"{args.retrieval}"
         retrieval_name += (
             f"-{args.n_retrieval_matches}.txt" if args.n_retrieval_matches > 0 else ".txt"
         )
-        self.features_retrieval = Path(
-            os.path.join(self.data, args.features_path, args.scene, f"{args.retrieval}.h5")
-        )
 
+        self.images = Path(os.path.join(self.data, args.image_dir))
+
+        # features
+        self.features = Path(os.path.join(self.data, args.features_dir, f"{args.features}.h5"))
+
+        self.features_retrieval = Path(
+            os.path.join(self.data, args.features_dir, f"{args.retrieval}.h5")
+        )
         os.makedirs(self.features.parent, exist_ok=True)
-        os.makedirs(self.features_retrieval.parent, exist_ok=True)
 
         # matches
-        self.matches = Path(
-            os.path.join(self.data, args.matches_path, args.scene, f"{self.model_name}.h5")
-        )
+        self.matches = Path(os.path.join(self.data, args.matches_dir, f"{self.model_name}.h5"))
 
         self.matches_retrieval = Path(
-            os.path.join(self.data, args.matches_path, args.scene, "retrieval", retrieval_name)
+            os.path.join(self.data, args.matches_dir, "retrieval", retrieval_name)
         )
 
         os.makedirs(self.matches.parent, exist_ok=True)
         os.makedirs(self.matches_retrieval.parent, exist_ok=True)
 
         # models
-        self.sparse = Path(os.path.join(self.data, args.sparse_path, args.scene, self.model_name))
-        self.dense = Path(os.path.join(self.data, args.dense_path, args.scene, self.model_name))
-        self.metrics = Path(os.path.join(self.data, args.metrics_path, args.scene, self.model_name))
-        self.results = Path(os.path.join(self.data, args.results_path, args.scene, self.model_name))
+        self.sparse = Path(os.path.join(self.data, args.sparse_dir, self.model_name))
+        self.dense = Path(os.path.join(self.data, args.stereo_dir, self.model_name))
+        self.metrics = Path(os.path.join(self.data, args.metrics_dir, self.model_name))
+        self.results = Path(os.path.join(self.data, args.results_dir, self.model_name))
 
         os.makedirs(self.sparse, exist_ok=True)
         os.makedirs(self.dense, exist_ok=True)
         os.makedirs(self.metrics, exist_ok=True)
         os.makedirs(self.results, exist_ok=True)
 
-        # logging.debug("Data paths:")
-        # for path, val in vars(self).items():
-        #     logging.debug(f"\t{path}: {val}")
+        logging.debug("Data paths:")
+        for path, val in vars(self).items():
+            logging.debug(f"\t{path}: {val}")

@@ -1,8 +1,8 @@
 """This project is a re-implementation of the MegaDepth pipeline."""
-import logging
 
 from megadepth.metrics.metadata import collect_metrics
 from megadepth.pipeline import Pipeline
+from megadepth.utils.enums import ModelType
 from megadepth.utils.utils import DataPaths, setup
 
 
@@ -10,6 +10,10 @@ def main():
     """Run the mega depth pipeline."""
     args = setup()
     paths = DataPaths(args)
+
+    if args.evaluate:
+        collect_metrics(paths, args, ModelType.SPARSE)
+        return
 
     # create pipeline
     pipeline = Pipeline(args)
@@ -24,10 +28,9 @@ def main():
     pipeline.cleanup()  # not implemented yet
 
     # alterative
-    # pipeline.run()
+    # pipeline.run() # -> run all steps
 
-    metrics = collect_metrics(paths.sparse)
-    logging.info(f"Metrics:\n{metrics}")
+    collect_metrics(paths, args, model_type=ModelType.SPARSE)
 
 
 if __name__ == "__main__":

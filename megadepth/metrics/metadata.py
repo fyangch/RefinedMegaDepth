@@ -1,23 +1,66 @@
 """Collect metadata from a COLMAP reconstruction."""
 
 import argparse
-from pathlib import Path
+import datetime
+import json
+import logging
+import os
 from typing import Any
 
 import pycolmap
 
+from megadepth.utils.enums import ModelType
+from megadepth.utils.utils import DataPaths
 
-def collect_metrics(path: Path) -> dict[str, Any]:
+
+def collect_metrics(
+    paths: DataPaths, args: argparse.Namespace, model_type: ModelType
+) -> dict[str, Any]:
     """Collect metrics for a COLMAP reconstruction.
 
     Args:
-        path: Path to the COLMAP reconstruction.
+        paths: The data paths for the reconstruction.
+        args: The parsed command line arguments.
+        model_type: The type of model to collect metrics for.
 
     Returns:
         A list of dictionaries containing the metrics.
     """
-    reconstruction = pycolmap.Reconstruction(path)
+    reconstruction = pycolmap.Reconstruction(paths.sparse)
 
+    if model_type == ModelType.SPARSE:
+        metrics = collect_sparse(reconstruction)
+    elif model_type == ModelType.DENSE:
+        # metrics = collect_dense(reconstruction)
+        raise NotImplementedError
+    else:
+        raise ValueError(f"Unknown model type: {model_type}")
+
+    # add pipeline information
+    metrics["scene"] = str(args.scene)
+    metrics["retrieval"] = args.retrieval
+    metrics["n_retrieval_matches"] = args.n_retrieval_matches
+    metrics["features"] = args.features
+    metrics["matcher"] = args.matcher
+
+    logging.debug(metrics)
+
+    timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    with open(os.path.join(paths.metrics, f"{model_type.value}-{timestamp}.json"), "w") as f:
+        json.dump(metrics, f, indent=4)
+
+    return metrics
+
+
+def collect_sparse(reconstruction: pycolmap.Reconstruction) -> dict[str, Any]:
+    """Collect metrics for a sparse COLMAP reconstruction.
+
+    Args:
+        reconstruction: The sparse reconstruction.
+
+    Returns:
+        A dictionary containing the metrics.
+    """
     n_images = len(reconstruction.images)
     reg_images = reconstruction.num_reg_images()
 
@@ -30,19 +73,3 @@ def collect_metrics(path: Path) -> dict[str, Any]:
         "mean_obs_per_reg_image": reconstruction.compute_mean_observations_per_reg_image(),
         "mean_track_length": reconstruction.compute_mean_track_length(),
     }
-
-
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "--model",
-        type=Path,
-        default="data",
-        help="Path to the model dir containing images.bin, cameras.bin, and points3D.bin.",
-    )
-    args = parser.parse_args()
-
-    metrics = collect_metrics(args.model)
-
-    for key, value in metrics.items():
-        print(f"{key}: {value}")
