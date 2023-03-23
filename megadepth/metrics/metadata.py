@@ -5,7 +5,7 @@ import datetime
 import json
 import logging
 import os
-from typing import Any
+from typing import Any, Dict
 
 import pycolmap
 
@@ -15,7 +15,7 @@ from megadepth.utils.utils import DataPaths
 
 def collect_metrics(
     paths: DataPaths, args: argparse.Namespace, model_type: ModelType
-) -> dict[str, Any]:
+) -> Dict[str, Any]:
     """Collect metrics for a COLMAP reconstruction.
 
     Args:
@@ -53,7 +53,7 @@ def collect_metrics(
     return metrics
 
 
-def collect_sparse(reconstruction: pycolmap.Reconstruction) -> dict[str, Any]:
+def collect_sparse(reconstruction: pycolmap.Reconstruction) -> Dict[str, Any]:
     """Collect metrics for a sparse COLMAP reconstruction.
 
     Args:
