@@ -77,3 +77,36 @@ Maybe we also need to do this:
    ```shell
    python -m build
    ``` 
+
+## Data
+The images are expected to be split by scenes and stored in the following format:
+```
+data
+├── scene_1
+│   ├── images
+│   │   ├── 00000000.jpg
+│   │   ├── 00000001.jpg
+│   │   ├── ...
+├── scene_2
+│   ├── images
+│   │   ├── 00000000.jpg
+│   │   ├── 00000001.jpg
+│   │   ├── ...
+├── ...
+```
+The pipeline will read the images from folder and create the following folders for the outputs:
+```
+data
+├── scene_1
+│   ├── images
+│   ├── features
+│   ├── matches
+│   ├── sparse
+│   ├── dense
+│   ├── metrics
+│   ├── results
+├── scene_2
+│   ├── ...
+├── ...
+```
+

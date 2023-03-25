@@ -1,7 +1,11 @@
 {
     "cSpell.words": [
+        "hloc",
         "homog",
-        "pycolmap"
+        "megadepth",
+        "Netvlad",
+        "pycolmap",
+        "SUPERPOINT"
     ],
     "autoDocstring.docstringFormat": "google",
     "editor.formatOnSave": true,

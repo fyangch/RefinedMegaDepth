@@ -1,10 +1,13 @@
 """Several helper functions for IO."""
 import argparse
 import os
+from pathlib import Path
 from typing import List
 
 import numpy as np
 from PIL import Image
+
+from megadepth.utils.enums import ModelType
 
 
 def load_image(image_path: str) -> np.ndarray:
@@ -52,31 +55,43 @@ def get_scene_image_paths(scene: str, args: argparse.Namespace) -> List[str]:
     return image_paths
 
 
-def read_depth_map(path: str) -> np.ndarray:
-    """Read depth map from the given path and return it as a numpy array.
-
-    This function was copied from:
-    https://github.com/colmap/colmap/blob/dev/scripts/python/read_write_dense.py
+def get_model_dir(scene: str, model: ModelType, args: argparse.Namespace) -> Path:
+    """Return the path to the given scene.
 
     Args:
-        path (str): Path to the depth map.
+        scene (str): The name of the scene to be processed.
+        args (argparse.Namespace): The parsed command line arguments.
 
     Returns:
-        np.ndarray: Depth map as a numpy array.
+        str: The path to the given scene.
     """
-    with open(path, "rb") as fid:
-        width, height, channels = np.genfromtxt(
-            fid, delimiter="&", max_rows=1, usecols=(0, 1, 2), dtype=int
-        )
-        fid.seek(0)
-        num_delimiter = 0
-        byte = fid.read(1)
-        while True:
-            if byte == b"&":
-                num_delimiter += 1
-                if num_delimiter >= 3:
-                    break
-            byte = fid.read(1)
-        array = np.fromfile(fid, np.float32)
-    array = array.reshape((width, height, channels), order="F")
-    return np.transpose(array, (1, 0, 2)).squeeze()
+    model_dir = None
+
+    if model == ModelType.SPARSE:
+        model_dir = os.path.join(args.data_path, args.sparse_path, scene)
+    elif model == ModelType.DENSE:
+        model_dir = os.path.join(args.data_path, args.dense_path, scene)
+    else:
+        raise ValueError(f"Unknown model type: {model}")
+
+    if not os.path.exists(model_dir):
+        raise ValueError(f"Model does not exist at: {model_dir}")
+
+    return Path(model_dir)
+
+
+def get_image_dir(scene: str, args: argparse.Namespace) -> Path:
+    """Return the path to the given scene.
+
+    Args:
+        scene (str): The name of the scene to be processed.
+        args (argparse.Namespace): The parsed command line arguments.
+
+    Returns:
+        str: The path to the given scene.
+    """
+    image_dir = os.path.join(args.data_path, args.image_path, scene)
+    if not os.path.exists(image_dir):
+        raise ValueError(f"Image directory does not exist at: {image_dir}")
+
+    return Path(image_dir)
