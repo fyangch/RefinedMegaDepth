@@ -37,7 +37,10 @@ def setup_args() -> argparse.Namespace:
 
     # DATA RELATED ARGUMENTS
     parser.add_argument(
-        "--data_path", type=Path, default="data", help="Path to the data directory."
+        "--data_path",
+        type=Path,
+        default="data",
+        help="Path to the data directory.",
     )
     parser.add_argument(
         "--scene",
@@ -127,6 +130,12 @@ def setup_args() -> argparse.Namespace:
         help="Evaluate the pipeline.",
     )
 
+    parser.add_argument(
+        "--colmap",
+        action="store_true",
+        help="Use COLMAP for the pipeline.",
+    )
+
     # LOGGING RELATED ARGUMENTS
     parser.add_argument(
         "--log_dir",
@@ -204,6 +213,9 @@ class DataPaths:
         # file names
         self.model_name = f"{args.features}-{args.matcher}"
 
+        if args.colmap:
+            self.model_name = "colmap"
+
         retrieval_name = f"{args.retrieval}"
         retrieval_name += (
             f"-{args.n_retrieval_matches}.txt" if args.n_retrieval_matches > 0 else ".txt"
@@ -227,10 +239,13 @@ class DataPaths:
         )
 
         os.makedirs(self.matches.parent, exist_ok=True)
-        os.makedirs(self.matches_retrieval.parent, exist_ok=True)
+
+        if not args.colmap:
+            os.makedirs(self.matches_retrieval.parent, exist_ok=True)
 
         # models
         self.sparse = Path(os.path.join(self.data, args.sparse_dir, self.model_name))
+        self.db = Path(os.path.join(self.sparse, "database.db"))
         self.dense = Path(os.path.join(self.data, args.stereo_dir, self.model_name))
         self.metrics = Path(os.path.join(self.data, args.metrics_dir, self.model_name))
         self.results = Path(os.path.join(self.data, args.results_dir, self.model_name))
