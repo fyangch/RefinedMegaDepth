@@ -1,4 +1,4 @@
-"""Functions to compute the overlap metric between a list of images."""
+"""Functions to compute the overlap metrics between a list of images."""
 
 
 import numpy as np
@@ -6,7 +6,7 @@ import pycolmap
 
 
 def sparse_overlap(reconstruction: pycolmap.Reconstruction) -> np.ndarray:
-    """Computes the overlap metric between a list of images.
+    """Computes the sparse overlap metric between a list of images.
 
     Args:
         reconstruction (pycolmap.Reconstruction): Reconstruction object.
@@ -37,7 +37,7 @@ def sparse_overlap(reconstruction: pycolmap.Reconstruction) -> np.ndarray:
 
 
 def dense_overlap(reconstruction: pycolmap.Reconstruction) -> np.ndarray:
-    """Computes the overlap metric between a list of images.
+    """Computes the dense overlap metric between a list of images.
 
     Args:
         reconstruction (pycolmap.Reconstruction): Reconstruction object.
