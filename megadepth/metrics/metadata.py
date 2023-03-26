@@ -62,7 +62,7 @@ def collect_metrics(
 
     overlap_fn = f"{model_type.value}-overlap-{timestamp}.npy"
     metrics["overlap_fn"] = overlap_fn
-    with open(os.path.join(metrics_path, overlap_fn), "wb") as f_overlap:
+    with open(os.path.join(paths.metrics, overlap_fn), "wb") as f_overlap:
         np.save(f_overlap, overlap)
 
     with open(os.path.join(paths.metrics, f"{model_type.value}-{timestamp}.json"), "w") as f_metric:
