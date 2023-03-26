@@ -6,12 +6,11 @@ import logging
 import os
 from pathlib import Path
 
+import numpy as np
+import pycolmap
 from hloc import extract_features, match_features
 
 from megadepth.utils.enums import Features, Matcher, Retrieval
-
-import numpy as np
-import pycolmap
 
 
 def camera_pixel_grid(
@@ -142,6 +141,12 @@ def setup_args() -> argparse.Namespace:
 
     # MODEL RELATED ARGUMENTS
     parser.add_argument(
+        "--model_name",
+        type=str,
+        help="The name of the model. if not specified, it will be set to <feature>-<matcher>",
+    )
+
+    parser.add_argument(
         "--retrieval",
         type=str,
         choices=[r.value for r in Retrieval],
@@ -149,11 +154,12 @@ def setup_args() -> argparse.Namespace:
         help="The retrieval method used in the model.",
     )
 
+    # make sure that the number is positive
     parser.add_argument(
         "--n_retrieval_matches",
         type=int,
         default=50,
-        help="The number of retrieval matches. 0 for exhaustive matching.",
+        help="The number of retrieval matches.",
     )
 
     parser.add_argument(
@@ -256,54 +262,56 @@ class DataPaths:
         Args:
             args (argparse.Namespace): The parsed command line arguments.
         """
-        # data
-        self.data = Path(os.path.join(args.data_path, args.scene))
-
-        # file names
-        self.model_name = f"{args.features}-{args.matcher}"
-
-        if args.colmap:
-            self.model_name = "colmap"
+        self.model_name = self.get_model_name(args)
 
         retrieval_name = f"{args.retrieval}"
         retrieval_name += (
             f"-{args.n_retrieval_matches}.txt" if args.n_retrieval_matches > 0 else ".txt"
         )
 
+        # paths
+        self.data = Path(os.path.join(args.data_path, args.scene))
         self.images = Path(os.path.join(self.data, args.image_dir))
 
-        # features
-        self.features = Path(os.path.join(self.data, args.features_dir, f"{args.features}.h5"))
-
+        # retrieval
         self.features_retrieval = Path(
             os.path.join(self.data, args.features_dir, f"{args.retrieval}.h5")
         )
-        os.makedirs(self.features.parent, exist_ok=True)
-
-        # matches
-        self.matches = Path(os.path.join(self.data, args.matches_dir, f"{self.model_name}.h5"))
-
         self.matches_retrieval = Path(
             os.path.join(self.data, args.matches_dir, "retrieval", retrieval_name)
         )
 
-        os.makedirs(self.matches.parent, exist_ok=True)
+        # features
+        self.features = Path(os.path.join(self.data, args.features_dir, f"{args.features}.h5"))
 
-        if not args.colmap:
-            os.makedirs(self.matches_retrieval.parent, exist_ok=True)
+        # matches
+        self.matches = Path(os.path.join(self.data, args.matches_dir, f"{self.model_name}.h5"))
 
         # models
         self.sparse = Path(os.path.join(self.data, args.sparse_dir, self.model_name))
         self.db = Path(os.path.join(self.sparse, "database.db"))
         self.dense = Path(os.path.join(self.data, args.stereo_dir, self.model_name))
+
+        # output
         self.metrics = Path(os.path.join(self.data, args.metrics_dir, self.model_name))
         self.results = Path(os.path.join(self.data, args.results_dir, self.model_name))
-
-        os.makedirs(self.sparse, exist_ok=True)
-        os.makedirs(self.dense, exist_ok=True)
-        os.makedirs(self.metrics, exist_ok=True)
-        os.makedirs(self.results, exist_ok=True)
 
         logging.debug("Data paths:")
         for path, val in vars(self).items():
             logging.debug(f"\t{path}: {val}")
+
+    def get_model_name(self, args: argparse.Namespace) -> str:
+        """Return the model name.
+
+        Args:
+            args (argparse.Namespace): The parsed command line arguments.
+
+        Returns:
+            str: The model name.
+        """
+        if args.model_name:
+            return args.model_name
+        elif args.colmap:
+            return "colmap"
+        else:
+            return f"{args.features}-{args.matcher}"
