@@ -2,7 +2,8 @@
 
 import numpy as np
 import pycolmap
-from utils.utils import filter_mask
+
+from megadepth.utils.utils import filter_mask
 
 
 def forward_project(

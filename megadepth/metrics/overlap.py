@@ -8,6 +8,9 @@ import pycolmap
 def sparse_overlap(reconstruction: pycolmap.Reconstruction) -> np.ndarray:
     """Computes the sparse overlap metric between a list of images.
 
+    Computation is based on:
+        https://github.com/mihaidusmanu/d2-net/blob/master/megadepth_utils/preprocess_scene.py#L202
+
     Args:
         reconstruction (pycolmap.Reconstruction): Reconstruction object.
 
@@ -17,33 +20,38 @@ def sparse_overlap(reconstruction: pycolmap.Reconstruction) -> np.ndarray:
     images = reconstruction.images
     N = len(images)
 
+    # pre-compute hash sets with 3D point IDs for faster lookups later
+    img_to_ids = {}
+    for i, k in enumerate(images.keys()):
+        img = images[k]  # image indices start at 1
+        img_to_ids[i] = {p.point3D_id for p in img.get_valid_points2D()}
+
+    # compute overlap scores for each image pair
     scores = np.ones((N, N))
-    for i, k1 in enumerate(images.keys()):
-        for j, k2 in enumerate(images.keys()):
-            if i >= j:
-                continue
-
-            # image indices start at 1
-            img_1 = images[k1]
-            img_2 = images[k2]
-
-            # compute number of common sparse points
-            ids_1 = set(img_1.get_valid_point2D_ids())
-            ids_2 = set(img_2.get_valid_point2D_ids())
-            num_common_ids = len(ids_1.intersection(ids_2))
+    for i in range(N):
+        for j in range(i + 1, N):
+            # compute number of common 3D point IDs
+            ids_1 = img_to_ids[i]
+            ids_2 = img_to_ids[j]
+            n_common_ids = len(ids_1.intersection(ids_2))
 
             # set overlap scores
-            scores[i, j] = num_common_ids / len(ids_1)
-            scores[j, i] = num_common_ids / len(ids_2)
+            scores[i, j] = n_common_ids / len(ids_1)
+            scores[j, i] = n_common_ids / len(ids_2)
 
     return scores
 
 
-def dense_overlap(reconstruction: pycolmap.Reconstruction) -> np.ndarray:
+def dense_overlap(
+    reconstruction: pycolmap.Reconstruction, stride: int = 10, reproj_thresh: int = 2000
+) -> np.ndarray:
     """Computes the dense overlap metric between a list of images.
 
     Args:
         reconstruction (pycolmap.Reconstruction): Reconstruction object.
+        stride (int, optional): Which stride to use when accessing the image and depth map pixels.
+        reproj_thresh (int, optional): Dense features with a reprojection error below this
+            threshold are considered as valid.
 
     Returns:
         np.ndarray: Array of shape (N, N) with the overlap metric between each pair of images.

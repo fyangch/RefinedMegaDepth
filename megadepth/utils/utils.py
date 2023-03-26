@@ -121,9 +121,9 @@ def setup_args() -> argparse.Namespace:
         help="Path to the sparse model.",
     )
     parser.add_argument(
-        "--stereo_dir",
+        "--dense_dir",
         type=Path,
-        default="stereo",
+        default="dense",
         help="Path to the dense model.",
     )
     parser.add_argument(
@@ -154,7 +154,6 @@ def setup_args() -> argparse.Namespace:
         help="The retrieval method used in the model.",
     )
 
-    # make sure that the number is positive
     parser.add_argument(
         "--n_retrieval_matches",
         type=int,
@@ -290,7 +289,7 @@ class DataPaths:
         # models
         self.sparse = Path(os.path.join(self.data, args.sparse_dir, self.model_name))
         self.db = Path(os.path.join(self.sparse, "database.db"))
-        self.dense = Path(os.path.join(self.data, args.stereo_dir, self.model_name))
+        self.dense = Path(os.path.join(self.data, args.dense_dir, self.model_name))
 
         # output
         self.metrics = Path(os.path.join(self.data, args.metrics_dir, self.model_name))
