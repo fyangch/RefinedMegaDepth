@@ -6,12 +6,11 @@ import logging
 import os
 from pathlib import Path
 
+import numpy as np
+import pycolmap
 from hloc import extract_features, match_features
 
 from megadepth.utils.enums import Features, Matcher, Retrieval
-
-import numpy as np
-import pycolmap
 
 
 def camera_pixel_grid(
@@ -119,9 +118,9 @@ def setup_args() -> argparse.Namespace:
         help="Path to the sparse model.",
     )
     parser.add_argument(
-        "--stereo_dir",
+        "--dense_dir",
         type=Path,
-        default="stereo",
+        default="dense",
         help="Path to the dense model.",
     )
     parser.add_argument(
@@ -280,7 +279,7 @@ class DataPaths:
 
         # models
         self.sparse = Path(os.path.join(self.data, args.sparse_dir, self.model_name))
-        self.dense = Path(os.path.join(self.data, args.stereo_dir, self.model_name))
+        self.dense = Path(os.path.join(self.data, args.dense_dir, self.model_name))
         self.metrics = Path(os.path.join(self.data, args.metrics_dir, self.model_name))
         self.results = Path(os.path.join(self.data, args.results_dir, self.model_name))
 
