@@ -5,10 +5,12 @@ import datetime
 import json
 import logging
 import os
-from typing import Any, Dict
+from typing import Any, Dict, Tuple
 
+import numpy as np
 import pycolmap
 
+from megadepth.metrics.overlap import sparse_overlap
 from megadepth.utils.enums import ModelType
 from megadepth.utils.utils import DataPaths
 
@@ -29,9 +31,9 @@ def collect_metrics(
     reconstruction = pycolmap.Reconstruction(paths.sparse)
 
     if model_type == ModelType.SPARSE:
-        metrics = collect_sparse(reconstruction)
+        metrics, overlap = collect_sparse(reconstruction)
     elif model_type == ModelType.DENSE:
-        # metrics = collect_dense(reconstruction)
+        # metrics, overlap = collect_dense(reconstruction)
         raise NotImplementedError
     else:
         raise ValueError(f"Unknown model type: {model_type}")
@@ -47,25 +49,31 @@ def collect_metrics(
     logging.debug(metrics)
 
     timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+
+    overlap_fn = f"{model_type.value}-overlap-{timestamp}.npy"
+    metrics["overlap_fn"] = overlap_fn
+    with open(os.path.join(metrics_path, overlap_fn), "wb") as f:
+        np.save(f, overlap)
+
     with open(os.path.join(paths.metrics, f"{model_type.value}-{timestamp}.json"), "w") as f:
         json.dump(metrics, f, indent=4)
 
     return metrics
 
 
-def collect_sparse(reconstruction: pycolmap.Reconstruction) -> Dict[str, Any]:
+def collect_sparse(reconstruction: pycolmap.Reconstruction) -> Tuple[Dict[str, Any], np.ndarray]:
     """Collect metrics for a sparse COLMAP reconstruction.
 
     Args:
         reconstruction: The sparse reconstruction.
 
     Returns:
-        A dictionary containing the metrics.
+        A dictionary containing the metrics and a numpy array containing the overlap scores.
     """
     n_images = len(reconstruction.images)
     reg_images = reconstruction.num_reg_images()
 
-    return {
+    metrics = {
         "n_images": n_images,
         "n_reg_images": reg_images,
         "perc_reg_images": reg_images / n_images * 100.0,
@@ -74,6 +82,9 @@ def collect_sparse(reconstruction: pycolmap.Reconstruction) -> Dict[str, Any]:
         "mean_obs_per_reg_image": reconstruction.compute_mean_observations_per_reg_image(),
         "mean_track_length": reconstruction.compute_mean_track_length(),
     }
+    overlap = sparse_overlap(reconstruction)
+
+    return metrics, overlap
 
 
 if __name__ == "__main__":
@@ -93,7 +104,7 @@ if __name__ == "__main__":
     model = pycolmap.Reconstruction(model_path)
 
     if args.model_type == ModelType.SPARSE.value:
-        metrics = collect_sparse(model)
+        metrics, overlap = collect_sparse(model)
     elif args.model_type == ModelType.DENSE.value:
         raise NotImplementedError
     else:
@@ -111,5 +122,11 @@ if __name__ == "__main__":
         os.makedirs(metrics_path)
 
     timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+
+    overlap_fn = f"{args.model_type}-overlap-{timestamp}.npy"
+    metrics["overlap_fn"] = overlap_fn
+    with open(os.path.join(metrics_path, overlap_fn), "wb") as f:
+        np.save(f, overlap)
+
     with open(os.path.join(metrics_path, f"{args.model_type}-{timestamp}.json"), "w") as f:
         json.dump(metrics, f, indent=4)
