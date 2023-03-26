@@ -20,7 +20,7 @@ def sparse_overlap(reconstruction: pycolmap.Reconstruction) -> np.ndarray:
     images = reconstruction.images
     N = len(images)
 
-    # pre-compute hash sets with 3D point IDs for faster look ups later
+    # pre-compute hash sets with 3D point IDs for faster lookups later
     img_to_ids = {}
     for i in range(N):
         img = images[i + 1]  # image indices start at 1
