@@ -20,16 +20,19 @@ def sparse_overlap(reconstruction: pycolmap.Reconstruction) -> np.ndarray:
     images = reconstruction.images
     N = len(images)
 
+    # pre-compute hash sets with 3D point IDs for faster look ups later
+    img_to_ids = {}
+    for i in range(N):
+        img = images[i + 1]  # image indices start at 1
+        img_to_ids[i] = set([p.point3D_id for p in img.get_valid_points2D()])
+
+    # compute overlap scores for each image pair
     scores = np.ones((N, N))
     for i in range(N):
         for j in range(i + 1, N):
-            # image indices start at 1
-            img_1 = images[i + 1]
-            img_2 = images[j + 1]
-
-            # compute number of common sparse points
-            ids_1 = set([p.point3D_id for p in img_1.get_valid_points2D()])
-            ids_2 = set([p.point3D_id for p in img_2.get_valid_points2D()])
+            # compute number of common 3D point IDs
+            ids_1 = img_to_ids[i]
+            ids_2 = img_to_ids[j]
             n_common_ids = len(ids_1.intersection(ids_2))
 
             # set overlap scores
