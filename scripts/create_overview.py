@@ -2,6 +2,7 @@
 
 import argparse
 import json
+import logging
 import os
 from typing import Any, Dict
 
@@ -22,6 +23,8 @@ def main(args: argparse.Namespace):
                 with open(os.path.join(scene, model, fname), "r") as f:
                     metrics = json.load(f)
 
+                logging.debug(os.path.join(scene, model, fname))
+
                 if metrics["scene"] not in overview:
                     overview[metrics["scene"]] = []
 
@@ -38,5 +41,7 @@ if __name__ == "__main__":
         "--output", default="data/metrics_overview.json", help="Path to the output file"
     )
     args = parser.parse_args()
+
+    logging.basicConfig(level=logging.DEBUG)
 
     main(args)

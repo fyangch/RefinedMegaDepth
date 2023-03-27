@@ -12,7 +12,6 @@ class ModelType(Enum):
 class Retrieval(Enum):
     """Enum for the different retrieval types."""
 
-    EXHAUSTIVE = "exhaustive"
     NETVLAD = "netvlad"
 
 
