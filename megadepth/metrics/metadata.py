@@ -39,7 +39,13 @@ def collect_metrics(
         raise ValueError(f"Unknown model type: {model_type}")
 
     # number of images
-    n_images = len([img for img in os.listdir(paths.images) if img.endswith(".jpg")])
+    n_images = len(
+        [
+            img
+            for img in os.listdir(paths.images)
+            if img.endswith(".jpg") or img.endswith(".JPG") or img.endswith(".png")
+        ]
+    )
     metrics["n_images"] = n_images
     metrics["perc_reg_images"] = metrics["n_reg_images"] / n_images * 100
 
