@@ -79,31 +79,33 @@ def dense_overlap(
     # compute overlap scores for each image pair
     scores = np.ones((N, N))
     for i, k1 in enumerate(images.keys()):
+        # load first image, camera and depth map
+        image_1 = images[k1]
+        camera_1 = cameras[image_1.camera_id]
+        depth_map_1 = read_array(os.path.join(depth_path, f"{image_1.name}.geometric.bin"))
+
+        # gather depth values that we want to check in a vector
+        depth_1 = depth_map_1[::downsample, ::downsample].ravel()
+
+        # get the corresponding 2D coordinates in image 1
+        points_2d = camera_pixel_grid(camera_1, downsample)
+
+        # filter out invalid depth values
+        valid_depth_mask = depth_1 > 0.0
+        depth_1 = depth_1[valid_depth_mask]
+        points_2d = points_2d[valid_depth_mask]
+
+        # number of dense features we are considering for the score computation
+        n_features = depth_1.size
+
         for j, k2 in enumerate(images.keys()):
             if i == j:
                 continue
 
-            # load images, cameras and depth maps
-            image_1 = images[k1]
+            # load second image, camera and depth map
             image_2 = images[k2]
-            camera_1 = cameras[image_1.camera_id]
             camera_2 = cameras[image_2.camera_id]
-            depth_map_1 = read_array(os.path.join(depth_path, f"{image_1.name}.geometric.bin"))
             depth_map_2 = read_array(os.path.join(depth_path, f"{image_2.name}.geometric.bin"))
-
-            # gather depth values that we want to check in a vector
-            depth_1 = depth_map_1[::downsample, ::downsample].ravel()
-
-            # get the corresponding 2D coordinates in image 1
-            points_2d = camera_pixel_grid(camera_1, downsample)
-
-            # filter out invalid depth values
-            valid_depth_mask = depth_1 > 0.0
-            depth_1 = depth_1[valid_depth_mask]
-            points_2d = points_2d[valid_depth_mask]
-
-            # number of dense features we are considering for the score computation
-            n_features = depth_1.size
 
             # backproject all valid 2D points from image 1 to 3D
             points_3d = backward_project(
