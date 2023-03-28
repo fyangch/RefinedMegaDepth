@@ -15,6 +15,7 @@ class Retrieval(Enum):
     NETVLAD = "netvlad"
     COSPLACE = "cosplace"
     POSES = "poses"
+    COVISIBILITY = "covisibility"
 
 
 class Features(Enum):

@@ -247,7 +247,7 @@ def get_configs(args: argparse.Namespace) -> dict:
     """
     return {
         "retrieval": extract_features.confs[args.retrieval]
-        if args.retrieval != Retrieval.POSES.value
+        if args.retrieval not in [Retrieval.POSES.value, Retrieval.COVISIBILITY.value]
         else None,
         "feature": extract_features.confs[args.features],
         "matcher": match_features.confs[args.matcher],

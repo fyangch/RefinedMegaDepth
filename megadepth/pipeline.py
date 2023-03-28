@@ -8,6 +8,7 @@ import pycolmap
 from hloc import (
     extract_features,
     match_features,
+    pairs_from_covisibility,
     pairs_from_exhaustive,
     pairs_from_poses,
     pairs_from_retrieval,
@@ -89,6 +90,15 @@ class Pipeline:
             logging.debug(f"Using {self.args.retrieval}")
 
             pairs_from_poses.main(
+                model=self.paths.baseline_model,
+                output=self.paths.matches_retrieval,
+                num_matched=self.args.n_retrieval_matches,
+            )
+
+        elif self.args.retrieval == Retrieval.COVISIBILITY.value:
+            logging.debug(f"Using {self.args.retrieval}")
+
+            pairs_from_covisibility.main(
                 model=self.paths.baseline_model,
                 output=self.paths.matches_retrieval,
                 num_matched=self.args.n_retrieval_matches,
