@@ -97,13 +97,13 @@ def dense_overlap(
             # get the corresponding 2D coordinates in image 1
             points_2d = camera_pixel_grid(camera_1, downsample)
 
-            # number of dense features we are considering for the score computation
-            n_features = depth_1.size
-
-            # filter out 2D points with invalid depth values
+            # filter out invalid depth values
             valid_depth_mask = depth_1 > 0.0
             depth_1 = depth_1[valid_depth_mask]
             points_2d = points_2d[valid_depth_mask]
+
+            # number of dense features we are considering for the score computation
+            n_features = depth_1.size
 
             # backproject all valid 2D points from image 1 to 3D
             points_3d = backward_project(
@@ -119,6 +119,7 @@ def dense_overlap(
             )
 
             # get corresponding depth values from the second depth map
+            # Note: the depth map values are stored column-wise and not row-wise!
             depth_2 = np.array(
                 [depth_map_2[coords[1] - 1, coords[0] - 1] for coords in proj_points_2d]
             )
