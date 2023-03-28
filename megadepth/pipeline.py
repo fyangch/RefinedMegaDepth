@@ -47,6 +47,7 @@ class Pipeline:
         self.model = None
 
     def _extract_pairs_from_retrieval(self):
+        """Extract pairs from retrieval."""
         logging.debug(f"Retrieval config: {self.configs['retrieval']}")
 
         # extract global features
@@ -88,7 +89,7 @@ class Pipeline:
             logging.debug(f"Using {self.args.retrieval}")
 
             pairs_from_poses.main(
-                poses=self.paths.baseline_model,
+                model=self.paths.baseline_model,
                 output=self.paths.matches_retrieval,
                 num_matched=self.args.n_retrieval_matches,
             )

@@ -246,7 +246,9 @@ def get_configs(args: argparse.Namespace) -> dict:
         dict: A dictionary of configuration parameters.
     """
     return {
-        "retrieval": extract_features.confs[args.retrieval],
+        "retrieval": extract_features.confs[args.retrieval]
+        if args.retrieval != Retrieval.POSES.value
+        else None,
         "feature": extract_features.confs[args.features],
         "matcher": match_features.confs[args.matcher],
     }
