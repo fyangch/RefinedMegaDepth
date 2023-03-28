@@ -9,10 +9,12 @@ from hloc import (
     extract_features,
     match_features,
     pairs_from_exhaustive,
+    pairs_from_poses,
     pairs_from_retrieval,
     reconstruction,
 )
 
+from megadepth.utils.enums import Retrieval
 from megadepth.utils.utils import DataPaths, get_configs
 
 N_EXHAUSTIVE = 300
@@ -44,26 +46,33 @@ class Pipeline:
         self.n_images = len(os.listdir(self.paths.images))
         self.model = None
 
-    def get_pairs(self) -> None:
-        """Get pairs of images to be matched."""
-        log_step("Getting pairs...")
+    def _extract_pairs_from_retrieval(self):
         logging.debug(f"Retrieval config: {self.configs['retrieval']}")
-        logging.debug(f"Storing retrieval features at {self.paths.features_retrieval}")
-
-        # TODO: use pairs from poses top 20, 30
-        # or netvlad, cosplace
-
-        if self.args.colmap:
-            logging.debug("No retrieval, using colmap")
-            return
 
         # extract global features
-        # os.makedirs(self.paths.features_retrieval.parent, exist_ok=True)
         extract_features.main(
             conf=self.configs["retrieval"],
             image_dir=self.paths.images,
             feature_path=self.paths.features_retrieval,
         )
+
+        logging.debug(f"Using {self.args.retrieval}")
+        logging.debug(f"Storing pairs to {self.paths.matches_retrieval}")
+
+        pairs_from_retrieval.main(
+            descriptors=self.paths.features_retrieval,
+            num_matched=self.args.n_retrieval_matches,
+            output=self.paths.matches_retrieval,
+        )
+
+    def get_pairs(self) -> None:
+        """Get pairs of images to be matched."""
+        log_step("Getting pairs...")
+        logging.debug(f"Storing retrieval features at {self.paths.features_retrieval}")
+
+        if self.args.colmap:
+            logging.debug("No retrieval, using colmap")
+            return
 
         # match global features to get pairs
         os.makedirs(self.paths.matches_retrieval.parent, exist_ok=True)
@@ -74,14 +83,21 @@ class Pipeline:
             pairs_from_exhaustive.main(
                 features=self.paths.features_retrieval, output=self.paths.matches_retrieval
             )
-        else:
+
+        elif self.args.retrieval == Retrieval.POSES.value:
             logging.debug(f"Using {self.args.retrieval}")
-            logging.debug(f"Storing pairs to {self.paths.matches_retrieval}")
-            pairs_from_retrieval.main(
-                descriptors=self.paths.features_retrieval,
-                num_matched=self.args.n_retrieval_matches,
+
+            pairs_from_poses.main(
+                poses=self.paths.baseline_model,
                 output=self.paths.matches_retrieval,
+                num_matched=self.args.n_retrieval_matches,
             )
+
+        elif self.args.retrieval in [Retrieval.NETVLAD.value, Retrieval.COSPLACE.value]:
+            self._extract_pairs_from_retrieval()
+
+        else:
+            raise NotImplementedError(f"Retrieval method {self.args.retrieval} not implemented")
 
     def extract_features(self) -> None:
         """Extract features from the images."""
@@ -106,7 +122,6 @@ class Pipeline:
         logging.debug(f"Feature config: {self.configs['feature']}")
         logging.debug(f"Storing features to {self.paths.features}")
 
-        # os.makedirs(self.paths.features.parent, exist_ok=True)
         extract_features.main(
             conf=self.configs["feature"],
             image_dir=self.paths.images,
@@ -132,7 +147,6 @@ class Pipeline:
         logging.debug(f"Loading features from {self.paths.features}")
         logging.debug(f"Storing matches to {self.paths.matches}")
 
-        # os.makedirs(self.paths.matches.parent, exist_ok=True)
         match_features.main(
             conf=self.configs["matcher"],
             pairs=self.paths.matches_retrieval,
@@ -148,13 +162,12 @@ class Pipeline:
         if self.args.colmap:
             logging.debug("Running SFM with colmap")
             pycolmap.incremental_mapping(self.paths.db, self.paths.images, self.paths.sparse)
-            # move files to sfm dir
+            # copy latest model to sfm dir
+            model_id = sorted(os.listdir(self.paths.sparse))[-1]
             for filename in ["images.bin", "cameras.bin", "points3D.bin"]:
-                shutil.move(
-                    str(self.paths.sparse / "0" / filename), str(self.paths.sparse / filename)
+                shutil.copy(
+                    str(self.paths.sparse / model_id / filename), str(self.paths.sparse / filename)
                 )
-            # delete "0" folder
-            shutil.rmtree(str(self.paths.sparse / "0"))
             return
 
         logging.debug("Running SFM with hloc")
@@ -169,7 +182,7 @@ class Pipeline:
             mapper_options=mapper_options,
         )
 
-        # delete "models" folder
+        # delete empty "models" folder
         shutil.rmtree(str(self.paths.sparse / "models"))
 
     def refinement(self) -> None:

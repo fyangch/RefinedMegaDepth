@@ -13,6 +13,8 @@ class Retrieval(Enum):
     """Enum for the different retrieval types."""
 
     NETVLAD = "netvlad"
+    COSPLACE = "cosplace"
+    POSES = "poses"
 
 
 class Features(Enum):
@@ -28,3 +30,10 @@ class Matcher(Enum):
     SUPERGLUE = "superglue"
     NN_RATIO = "NN-ratio"
     NN_MUTUAL = "NN-mutual"
+
+
+class PairsFrom(Enum):
+    """Enum for the different pairs from types."""
+
+    POSES = "poses"
+    RETRIEVAL = "retrieval"

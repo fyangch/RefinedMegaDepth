@@ -263,10 +263,7 @@ class DataPaths:
         """
         self.model_name = self.get_model_name(args)
 
-        retrieval_name = f"{args.retrieval}"
-        retrieval_name += (
-            f"-{args.n_retrieval_matches}.txt" if args.n_retrieval_matches > 0 else ".txt"
-        )
+        retrieval_name = f"{args.retrieval}-{args.n_retrieval_matches}.txt"
 
         # paths
         self.data = Path(os.path.join(args.data_path, args.scene))
@@ -290,6 +287,7 @@ class DataPaths:
         self.sparse = Path(os.path.join(self.data, args.sparse_dir, self.model_name))
         self.db = Path(os.path.join(self.sparse, "database.db"))
         self.dense = Path(os.path.join(self.data, args.dense_dir, self.model_name))
+        self.baseline_model = Path(os.path.join(self.data, args.sparse_dir, "baseline"))
 
         # output
         self.metrics = Path(os.path.join(self.data, args.metrics_dir, self.model_name))
@@ -313,4 +311,4 @@ class DataPaths:
         elif args.colmap:
             return "colmap"
         else:
-            return f"{args.features}-{args.matcher}"
+            return f"{args.features}-{args.matcher}-{args.retrieval}-{args.n_retrieval_matches}"
