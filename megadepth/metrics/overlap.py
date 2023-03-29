@@ -6,6 +6,7 @@ from typing import Union
 
 import numpy as np
 import pycolmap
+from tqdm import tqdm
 
 from megadepth.utils.projections import backward_project, forward_project
 from megadepth.utils.read_write_dense import read_array
@@ -37,7 +38,7 @@ def sparse_overlap(reconstruction: pycolmap.Reconstruction) -> np.ndarray:
 
     # compute overlap scores for each image pair
     scores = np.ones((N, N))
-    for i in range(N):
+    for i in tqdm(range(N)):
         for j in range(i + 1, N):
             # compute number of common 3D point IDs
             ids_1 = img_to_ids[i]
@@ -78,7 +79,7 @@ def dense_overlap(
 
     # compute overlap scores for each image pair
     scores = np.ones((N, N))
-    for i, k1 in enumerate(images.keys()):
+    for i, k1 in enumerate(tqdm(images.keys())):
         # load first image, camera and depth map
         image_1 = images[k1]
         camera_1 = cameras[image_1.camera_id]
@@ -98,27 +99,24 @@ def dense_overlap(
         # number of dense features we are considering for the score computation
         n_features = depth_1.size
 
-        for j, k2 in enumerate(images.keys()):
-            if i == j:
-                continue
+        # backproject all valid 2D points from image 1 to 3D
+        points_3d = backward_project(
+            points_2d=points_2d,
+            image=image_1,
+            camera=camera_1,
+            depth=depth_1,
+        )
 
+        for j, k2 in enumerate(images.keys()):
             # load second image, camera and depth map
             image_2 = images[k2]
             camera_2 = cameras[image_2.camera_id]
             depth_map_2 = read_array(os.path.join(depth_path, f"{image_2.name}.geometric.bin"))
 
-            # backproject all valid 2D points from image 1 to 3D
-            points_3d = backward_project(
-                points_2d=points_2d,
-                image=image_1,
-                camera=camera_1,
-                depth=depth_1,
-            )
-
             # project all 3D points to image 2 to obtain 2D points and associated depth values
             proj_points_2d, proj_depths = forward_project(
                 points_3d=points_3d, image=image_2, camera=camera_2, return_depth=True
-            )
+            )[:2]
 
             # get corresponding depth values from the second depth map
             # Note: the depth map values are stored column-wise and not row-wise!
