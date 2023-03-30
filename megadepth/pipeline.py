@@ -1,8 +1,10 @@
 """Implementation of the MegaDepth pipeline using colmap, hloc and pixsfm."""
 import argparse
+import datetime
 import logging
 import os
 import shutil
+import time
 
 import pycolmap
 from hloc import (
@@ -70,6 +72,7 @@ class Pipeline:
         """Get pairs of images to be matched."""
         log_step("Getting pairs...")
         logging.debug(f"Storing retrieval features at {self.paths.features_retrieval}")
+        start = time.time()
 
         if self.args.colmap:
             logging.debug("No retrieval, using colmap")
@@ -100,9 +103,13 @@ class Pipeline:
         else:
             raise NotImplementedError(f"Retrieval method {self.args.retrieval} not implemented")
 
+        end = time.time()
+        logging.info(f"Time to get pairs: {datetime.timedelta(seconds=end - start)}")
+
     def extract_features(self) -> None:
         """Extract features from the images."""
         log_step("Extracting features...")
+        start = time.time()
 
         if self.args.colmap:
             logging.debug("Extracting features with colmap")
@@ -129,9 +136,13 @@ class Pipeline:
             feature_path=self.paths.features,
         )
 
+        end = time.time()
+        logging.info(f"Time to extract features: {datetime.timedelta(seconds=end - start)}")
+
     def match_features(self) -> None:
         """Match features between images."""
         log_step("Matching features...")
+        start = time.time()
 
         if self.args.colmap:
             if self.n_images <= N_EXHAUSTIVE:
@@ -155,9 +166,14 @@ class Pipeline:
             matches=self.paths.matches,
         )
 
+        end = time.time()
+        logging.info(f"Time to match features: {datetime.timedelta(seconds=end - start)}")
+
     def sfm(self) -> None:
         """Run Structure from Motion."""
         log_step("Running Structure from Motion...")
+        start = time.time()
+
         os.makedirs(self.paths.sparse, exist_ok=True)
 
         if self.args.colmap:
@@ -169,6 +185,9 @@ class Pipeline:
                 shutil.copy(
                     str(self.paths.sparse / model_id / filename), str(self.paths.sparse / filename)
                 )
+
+            end = time.time()
+            logging.info(f"Time to run SFM: {datetime.timedelta(seconds=end - start)}")
             return
 
         logging.debug("Running SFM with hloc")
@@ -186,15 +205,28 @@ class Pipeline:
         # delete empty "models" folder
         shutil.rmtree(str(self.paths.sparse / "models"))
 
+        end = time.time()
+        logging.info(f"Time to run SFM: {datetime.timedelta(seconds=end - start)}")
+
     def refinement(self) -> None:
         """Refine the reconstruction using PixSFM."""
         log_step("Refining the reconstruction...")
+        start = time.time()
+
         os.makedirs(self.paths.sparse, exist_ok=True)
+
         # TODO: implement refinement
+
+        end = time.time()
+        logging.info(
+            f"Time to refine the reconstruction: {datetime.timedelta(seconds=end - start)}"
+        )
 
     def mvs(self) -> None:
         """Run Multi-View Stereo."""
         log_step("Running Multi-View Stereo...")
+        start = time.time()
+
         os.makedirs(self.paths.dense, exist_ok=True)
 
         # TODO: implement MVS
@@ -202,12 +234,19 @@ class Pipeline:
         # pycolmap.patch_match_stereo(mvs_path)  # requires compilation with CUDA
         # pycolmap.stereo_fusion(mvs_path / "dense.ply", mvs_path)
 
+        end = time.time()
+        logging.info(f"Time to run MVS: {datetime.timedelta(seconds=end - start)}")
+
     def cleanup(self) -> None:
         """Clean up the pipeline."""
         # TODO: implement cleanup
         log_step("Cleaning up...")
+        start = time.time()
 
         os.makedirs(self.paths.results, exist_ok=True)
+
+        end = time.time()
+        logging.info(f"Time to clean up: {datetime.timedelta(seconds=end - start)}")
 
     def run(self) -> None:
         """Run the pipeline."""
