@@ -19,8 +19,7 @@ def camera_pixel_grid(
     """Generate array of 2d grid points within the bounds of the given camera.
 
     Args:
-        camera (pycolmap.Camera)
-        : Camera to use to generate grid points
+        camera (pycolmap.Camera): Camera to use to generate grid points
         downsample (int): number of samples
         reverse_x (bool, optional): whether to reverse x-axis. Defaults to False.
         reverse_y (bool, optional): whether to reverse y-axis. Defaults to False.
@@ -247,7 +246,7 @@ def get_configs(args: argparse.Namespace) -> dict:
     """
     return {
         "retrieval": extract_features.confs[args.retrieval]
-        if args.retrieval != Retrieval.POSES.value
+        if args.retrieval not in [Retrieval.POSES.value, Retrieval.COVISIBILITY.value]
         else None,
         "feature": extract_features.confs[args.features],
         "matcher": match_features.confs[args.matcher],

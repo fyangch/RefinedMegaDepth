@@ -5,12 +5,13 @@ import datetime
 import json
 import logging
 import os
-from typing import Any, Dict, Tuple
+from pathlib import Path
+from typing import Any, Dict, Tuple, Union
 
 import numpy as np
 import pycolmap
 
-from megadepth.metrics.overlap import sparse_overlap
+from megadepth.metrics.overlap import dense_overlap, sparse_overlap
 from megadepth.utils.enums import ModelType
 from megadepth.utils.utils import DataPaths
 
@@ -28,13 +29,13 @@ def collect_metrics(
     Returns:
         A list of dictionaries containing the metrics.
     """
-    reconstruction = pycolmap.Reconstruction(paths.sparse)
-
     if model_type == ModelType.SPARSE:
+        reconstruction = pycolmap.Reconstruction(paths.sparse)
         metrics, overlap = collect_sparse(reconstruction)
     elif model_type == ModelType.DENSE:
-        # metrics, overlap = collect_dense(reconstruction)
-        raise NotImplementedError
+        reconstruction = pycolmap.Reconstruction(os.path.join(paths.dense, "sparse"))
+        depth_map_path = os.path.join(paths.dense, "stereo", "depth_maps")
+        metrics, overlap = collect_dense(reconstruction, depth_map_path)
     else:
         raise ValueError(f"Unknown model type: {model_type}")
 
@@ -98,6 +99,26 @@ def collect_sparse(reconstruction: pycolmap.Reconstruction) -> Tuple[Dict[str, A
     return metrics, overlap
 
 
+def collect_dense(
+    reconstruction: pycolmap.Reconstruction, depth_map_path: Union[Path, str]
+) -> Tuple[Dict[str, Any], np.ndarray]:
+    """Collect metrics for a dense COLMAP reconstruction.
+
+    Args:
+        reconstruction: The dense reconstruction.
+        depth_map_path: Path to the directory that contains the depth maps.
+
+    Returns:
+        A dictionary containing the metrics and a numpy array containing the overlap scores.
+    """
+    metrics = {
+        # TODO
+    }
+    overlap = dense_overlap(reconstruction, depth_map_path)
+
+    return metrics, overlap
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--data_path", type=str, required=True)
@@ -112,12 +133,14 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     model_path = os.path.join(args.data_path, args.scene, args.model_type, args.model_name)
-    model = pycolmap.Reconstruction(model_path)
 
     if args.model_type == ModelType.SPARSE.value:
+        model = pycolmap.Reconstruction(model_path)
         metrics, overlap = collect_sparse(model)
     elif args.model_type == ModelType.DENSE.value:
-        raise NotImplementedError
+        model = pycolmap.Reconstruction(os.path.join(model_path, "sparse"))
+        depth_map_path = os.path.join(model_path, "stereo", "depth_maps")
+        metrics, overlap = collect_dense(model, depth_map_path)
     else:
         raise ValueError(f"Unknown model type: {args.model_type}")
 
