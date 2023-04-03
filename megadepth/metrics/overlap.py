@@ -108,6 +108,9 @@ def dense_overlap(
         )
 
         for j, k2 in enumerate(images.keys()):
+            if i == j:
+                continue
+
             # load second image, camera and depth map
             image_2 = images[k2]
             camera_2 = cameras[image_2.camera_id]
@@ -120,9 +123,7 @@ def dense_overlap(
 
             # get corresponding depth values from the second depth map
             # Note: the depth map values are stored column-wise and not row-wise!
-            depth_2 = np.array(
-                [depth_map_2[coords[1] - 1, coords[0] - 1] for coords in proj_points_2d]
-            )
+            depth_2 = np.array([depth_map_2[coords[1], coords[0]] for coords in proj_points_2d])
 
             # compute inliers based on the absolute relative depth errors
             abs_rel_error = np.abs(depth_2 / proj_depths - 1.0)
