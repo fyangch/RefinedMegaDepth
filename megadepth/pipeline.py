@@ -134,6 +134,9 @@ class Pipeline:
             pycolmap.extract_features(
                 database_path=self.paths.db, image_path=self.paths.images, verbose=self.args.verbose
             )
+
+            end = time.time()
+            logging.info(f"Time to extract features: {datetime.timedelta(seconds=end - start)}")
             return
 
         logging.debug("Extracting features with hloc")
@@ -161,6 +164,9 @@ class Pipeline:
             else:
                 logging.debug("Sequential matching features with colmap")
                 pycolmap.match_sequential(self.paths.db, verbose=self.args.verbose)
+
+            end = time.time()
+            logging.info(f"Time to match features: {datetime.timedelta(seconds=end - start)}")
             return
 
         logging.debug("Matching features with hloc")
