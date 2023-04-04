@@ -189,8 +189,15 @@ class Pipeline:
         if self.args.colmap:
             logging.debug("Running SFM with colmap")
             pycolmap.incremental_mapping(self.paths.db, self.paths.images, self.paths.sparse)
+
             # copy latest model to sfm dir
-            model_id = sorted(os.listdir(self.paths.sparse))[-1]
+            model_id = sorted(
+                [
+                    dir
+                    for dir in os.listdir(self.paths.sparse)
+                    if os.path.isdir(self.paths.sparse / dir)
+                ]
+            )[-1]
             for filename in ["images.bin", "cameras.bin", "points3D.bin"]:
                 shutil.copy(
                     str(self.paths.sparse / model_id / filename), str(self.paths.sparse / filename)
