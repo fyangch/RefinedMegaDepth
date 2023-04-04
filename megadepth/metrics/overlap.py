@@ -122,7 +122,7 @@ def dense_overlap(
             )[:2]
 
             # get corresponding depth values from the second depth map
-            # Note: the depth map values are stored column-wise and not row-wise!
+            # depth map values are stored row-wise => first index with y-coordinate
             depth_2 = np.array([depth_map_2[coords[1], coords[0]] for coords in proj_points_2d])
 
             # compute inliers based on the absolute relative depth errors
