@@ -133,6 +133,9 @@ class Pipeline:
             pycolmap.extract_features(
                 database_path=self.paths.db, image_path=self.paths.images, verbose=self.args.verbose
             )
+
+            end = time.time()
+            logging.info(f"Time to extract features: {datetime.timedelta(seconds=end - start)}")
             return
 
         logging.debug("Extracting features with hloc")
@@ -156,6 +159,9 @@ class Pipeline:
         if self.args.colmap:
             logging.debug("Exhaustive matching features with colmap")
             pycolmap.match_exhaustive(self.paths.db, verbose=self.args.verbose)
+
+            end = time.time()
+            logging.info(f"Time to match features: {datetime.timedelta(seconds=end - start)}")
             return
 
         logging.debug("Matching features with hloc")
@@ -194,7 +200,13 @@ class Pipeline:
             pycolmap.incremental_mapping(self.paths.db, self.paths.images, self.paths.sparse)
             self.sparse_model = pycolmap.Reconstruction(self.paths.sparse)
             # copy latest model to sfm dir
-            model_id = sorted(os.listdir(self.paths.sparse))[-1]
+            model_id = sorted(
+                [
+                    dir
+                    for dir in os.listdir(self.paths.sparse)
+                    if os.path.isdir(self.paths.sparse / dir)
+                ]
+            )[-1]
             for filename in ["images.bin", "cameras.bin", "points3D.bin"]:
                 shutil.copy(
                     str(self.paths.sparse / model_id / filename), str(self.paths.sparse / filename)

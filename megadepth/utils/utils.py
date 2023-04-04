@@ -54,7 +54,7 @@ def filter_mask(data: np.ndarray, w: int, h: int) -> np.ndarray:
     """
     x = data[:, 0]
     y = data[:, 1]
-    mask = (x >= 0) & (x <= w) & (y >= 0) & (y <= h)
+    mask = (x >= 0) & (x < w) & (y >= 0) & (y < h)
     return mask
 
 
