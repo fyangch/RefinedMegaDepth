@@ -16,6 +16,7 @@ class Retrieval(Enum):
     COSPLACE = "cosplace"
     POSES = "poses"
     COVISIBILITY = "covisibility"
+    EXHAUSTIVE = "exhaustive"
 
 
 class Features(Enum):

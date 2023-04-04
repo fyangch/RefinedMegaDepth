@@ -12,7 +12,7 @@ import numpy as np
 import pycolmap
 
 from megadepth.metrics.overlap import dense_overlap, sparse_overlap
-from megadepth.utils.enums import ModelType
+from megadepth.utils.constants import ModelType
 from megadepth.utils.utils import DataPaths
 
 
@@ -111,7 +111,7 @@ def collect_dense(
     Returns:
         A dictionary containing the metrics and a numpy array containing the overlap scores.
     """
-    metrics = {
+    metrics: Dict[str, Any] = {
         # TODO
     }
     overlap = dense_overlap(reconstruction, depth_map_path)

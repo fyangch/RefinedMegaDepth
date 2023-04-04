@@ -17,10 +17,8 @@ from hloc import (
     reconstruction,
 )
 
-from megadepth.utils.enums import Retrieval
+from megadepth.utils.constants import Retrieval
 from megadepth.utils.utils import DataPaths, get_configs
-
-N_EXHAUSTIVE = 300
 
 
 def log_step(title: str) -> None:
@@ -47,7 +45,7 @@ class Pipeline:
         self.configs = get_configs(args)
         self.paths = DataPaths(args)
         self.n_images = len(os.listdir(self.paths.images))
-        self.model = None
+        self.sparse_model = None
 
     def _extract_pairs_from_retrieval(self):
         """Extract pairs from retrieval."""
@@ -82,9 +80,10 @@ class Pipeline:
         # match global features to get pairs
         os.makedirs(self.paths.matches_retrieval.parent, exist_ok=True)
 
-        if self.n_images <= N_EXHAUSTIVE:
+        if self.args.retrieval == Retrieval.EXHAUSTIVE.value:
             logging.debug("Using exhaustive retrieval")
             logging.debug(f"Storing pairs to {self.paths.matches_retrieval}")
+
             pairs_from_exhaustive.main(
                 features=self.paths.features_retrieval, output=self.paths.matches_retrieval
             )
@@ -155,12 +154,8 @@ class Pipeline:
         start = time.time()
 
         if self.args.colmap:
-            if self.n_images <= N_EXHAUSTIVE:
-                logging.debug("Exhaustive matching features with colmap")
-                pycolmap.match_exhaustive(self.paths.db, verbose=self.args.verbose)
-            else:
-                logging.debug("Sequential matching features with colmap")
-                pycolmap.match_sequential(self.paths.db, verbose=self.args.verbose)
+            logging.debug("Exhaustive matching features with colmap")
+            pycolmap.match_exhaustive(self.paths.db, verbose=self.args.verbose)
             return
 
         logging.debug("Matching features with hloc")
@@ -186,9 +181,18 @@ class Pipeline:
 
         os.makedirs(self.paths.sparse, exist_ok=True)
 
+        if not self.args.overwrite:
+            try:
+                self.sparse_model = pycolmap.Reconstruction(self.paths.sparse)
+                logging.info(f"Loaded reconstruction from {self.paths.sparse}. Skipping SFM...")
+                return
+            except Exception:
+                logging.warning("No reconstruction found. Running SFM...")
+
         if self.args.colmap:
             logging.debug("Running SFM with colmap")
             pycolmap.incremental_mapping(self.paths.db, self.paths.images, self.paths.sparse)
+            self.sparse_model = pycolmap.Reconstruction(self.paths.sparse)
             # copy latest model to sfm dir
             model_id = sorted(os.listdir(self.paths.sparse))[-1]
             for filename in ["images.bin", "cameras.bin", "points3D.bin"]:
@@ -202,7 +206,7 @@ class Pipeline:
 
         logging.debug("Running SFM with hloc")
         mapper_options = pycolmap.IncrementalMapperOptions().todict()
-        self.model = reconstruction.main(
+        self.sparse_model = reconstruction.main(
             sfm_dir=self.paths.sparse,
             image_dir=self.paths.images,
             pairs=self.paths.matches_retrieval,
@@ -267,3 +271,75 @@ class Pipeline:
         self.refinement()
         self.mvs()
         self.cleanup()
+
+
+class ColmapPipeline(Pipeline):
+    """Pipeline for COLMAP."""
+
+    def __init__(self, args: argparse.Namespace) -> None:
+        """Initialize the pipeline."""
+        super().__init__(args)
+
+    def get_pairs(self) -> None:
+        """Get pairs of images to match."""
+        log_step("Getting pairs...")
+        logging.info("No retrieval, using colmap")
+
+    def extract_features(self) -> None:
+        """Extract features from images."""
+        log_step("Extracting features...")
+        start = time.time()
+        logging.debug("Extracting features with colmap")
+
+        os.makedirs(self.paths.db.parent, exist_ok=True)
+        if os.path.exists(self.paths.db):
+            logging.warning("Database already exists, deleting it...")
+            # delete file
+            fname = str(self.paths.db)
+            os.remove(fname)
+
+        pycolmap.extract_features(
+            database_path=self.paths.db, image_path=self.paths.images, verbose=self.args.verbose
+        )
+
+        end = time.time()
+        logging.info(f"Time to extract features: {datetime.timedelta(seconds=end - start)}")
+
+    def match_features(self) -> None:
+        """Match features between images."""
+        log_step("Matching features...")
+        start = time.time()
+
+        logging.debug("Matching features with colmap")
+        pycolmap.match_features(self.paths.db, verbose=self.args.verbose)
+
+        end = time.time()
+        logging.info(f"Time to match features: {datetime.timedelta(seconds=end - start)}")
+
+    def sfm(self) -> None:
+        """Run Structure from Motion."""
+        log_step("Running Structure from Motion...")
+        start = time.time()
+
+        os.makedirs(self.paths.sparse, exist_ok=True)
+
+        if not self.args.overwrite:
+            try:
+                self.sparse_model = pycolmap.Reconstruction(self.paths.sparse)
+                logging.info(f"Loaded reconstruction from {self.paths.sparse}. Skipping SFM...")
+                return
+            except Exception:
+                logging.warning("No reconstruction found. Running SFM...")
+
+        logging.debug("Running SFM with colmap")
+        pycolmap.incremental_mapping(self.paths.db, self.paths.images, self.paths.sparse)
+        self.sparse_model = pycolmap.Reconstruction(self.paths.sparse)
+        # copy latest model to sfm dir
+        model_id = sorted(os.listdir(self.paths.sparse))[-1]
+        for filename in ["images.bin", "cameras.bin", "points3D.bin"]:
+            shutil.copy(
+                str(self.paths.sparse / model_id / filename), str(self.paths.sparse / filename)
+            )
+
+        end = time.time()
+        logging.info(f"Time to run SFM: {datetime.timedelta(seconds=end - start)}")

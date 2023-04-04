@@ -6,7 +6,7 @@ import time
 
 from megadepth.metrics.metadata import collect_metrics
 from megadepth.pipeline import Pipeline
-from megadepth.utils.enums import ModelType
+from megadepth.utils.constants import ModelType
 from megadepth.utils.utils import DataPaths, setup
 
 
