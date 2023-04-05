@@ -7,7 +7,7 @@ from typing import List
 import numpy as np
 from PIL import Image
 
-from megadepth.utils.enums import ModelType
+from megadepth.utils.constants import ModelType
 
 
 def load_image(image_path: str) -> np.ndarray:

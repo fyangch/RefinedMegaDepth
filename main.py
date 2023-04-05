@@ -5,7 +5,6 @@ import logging
 import time
 
 from megadepth.metrics.metadata import collect_metrics
-from megadepth.pipeline import Pipeline
 from megadepth.utils.constants import ModelType
 from megadepth.utils.utils import DataPaths, setup
 
@@ -22,7 +21,14 @@ def main():
         return
 
     # create pipeline
-    pipeline = Pipeline(args)
+    if args.colmap:
+        from megadepth.pipelines.colmap import ColmapPipeline
+
+        pipeline = ColmapPipeline(args)
+    else:
+        from megadepth.pipelines.hloc import HlocPipeline
+
+        pipeline = HlocPipeline(args)
 
     # run pipeline
     pipeline.get_pairs()
