@@ -10,7 +10,7 @@ import numpy as np
 import pycolmap
 from hloc import extract_features, match_features
 
-from megadepth.utils.enums import Features, Matcher, Retrieval
+from megadepth.utils.constants import Features, Matcher, Retrieval
 
 
 def camera_pixel_grid(
@@ -52,9 +52,9 @@ def filter_mask(data: np.ndarray, w: int, h: int) -> np.ndarray:
     Returns:
         np.ndarray: a mask of 0 and 1.
     """
-    x = data[:, 0]
-    y = data[:, 1]
-    mask = (x >= 0) & (x <= w) & (y >= 0) & (y <= h)
+    x = data[:, 0].astype(int)
+    y = data[:, 1].astype(int)
+    mask = (x >= 0) & (x < w) & (y >= 0) & (y < h)
     return mask
 
 
@@ -189,6 +189,12 @@ def setup_args() -> argparse.Namespace:
         help="Use COLMAP for the pipeline.",
     )
 
+    parser.add_argument(
+        "--overwrite",
+        action="store_true",
+        help="Overwrite the existing results.",
+    )
+
     # LOGGING RELATED ARGUMENTS
     parser.add_argument(
         "--log_dir",
@@ -244,13 +250,20 @@ def get_configs(args: argparse.Namespace) -> dict:
     Returns:
         dict: A dictionary of configuration parameters.
     """
-    return {
+    confs = {
         "retrieval": extract_features.confs[args.retrieval]
-        if args.retrieval not in [Retrieval.POSES.value, Retrieval.COVISIBILITY.value]
+        if args.retrieval
+        not in [Retrieval.POSES.value, Retrieval.COVISIBILITY.value, Retrieval.EXHAUSTIVE.value]
         else None,
         "feature": extract_features.confs[args.features],
         "matcher": match_features.confs[args.matcher],
     }
+
+    if args.features == Features.SIFT.value:
+        confs["feature"]["preprocessing"]["resize_max"] = 3200
+        # confs["feature"]["preprocessing"]["grayscale"] = False # Raises error
+
+    return confs
 
 
 class DataPaths:
@@ -264,7 +277,12 @@ class DataPaths:
         """
         self.model_name = self.get_model_name(args)
 
-        retrieval_name = f"{args.retrieval}-{args.n_retrieval_matches}.txt"
+        retrieval_name = f"{args.retrieval}"
+        retrieval_name += (
+            ".txt"
+            if args.retrieval != Retrieval.EXHAUSTIVE.value
+            else f"-{args.n_retrieval_matches}.txt"
+        )
 
         # paths
         self.data = Path(os.path.join(args.data_path, args.scene))

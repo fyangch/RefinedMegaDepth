@@ -28,7 +28,7 @@ def forward_project(
         (np.ndarray: Array of valid 2D points on the given image.
          np.ndarray (optional)): Array of depth values associated with each 2D point returned.
     """
-    points_2d = np.array(camera.world_to_image(image.project(points_3d)), dtype=int)
+    points_2d = np.array(np.round(camera.world_to_image(image.project(points_3d))), dtype=int)
 
     # filter out 2D points that lie outside of the image
     mask = filter_mask(points_2d, camera.width, camera.height)
