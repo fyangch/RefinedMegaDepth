@@ -10,8 +10,8 @@ import numpy as np
 import pycolmap
 from hloc import extract_features, match_features
 
+import megadepth.utils.projections as projections
 from megadepth.utils.constants import Features, Matcher, Retrieval
-from megadepth.utils.projections import backward_project
 
 
 def camera_pixel_grid(
@@ -351,7 +351,7 @@ def get_camera_poses(reconstruction) -> np.ndarray:
     for i, k1 in enumerate(images.keys()):
         image_1 = images[k1]
         camera_1 = cameras[image_1.camera_id]
-        camera_poses[i] = backward_project(
+        camera_poses[i] = projections.backward_project(
             points_2d=np.array([[0, 0]]),
             image=image_1,
             camera=camera_1,

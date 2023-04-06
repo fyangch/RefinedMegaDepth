@@ -21,34 +21,31 @@ def pca(data):
     return lambda x: (x - mean) @ sorted_eigenvectors
 
 
-def orthogonal_projections(data, color=None, limit=10, path=None):
-    """Creates 3 orthogonal scatter plots, from top, front and side view."""
+def plot_view_projection(Data, view, limit=10, s=1, alpha=0.1, *args, **kwargs):
+    """Takes Data, an index that specifies the view direction ["Top View", "Front View", "Right View"]."""
+    view_names = ["Top View", "Front View", "Right View"]
+    id1, id2 = [(0, 1), (0, 2), (1, 2)][view]
+    for data in Data:
+        labels = ["X", "Y", "Z"]
+        plt.scatter(data[:, id1], data[:, id2], s=s, alpha=alpha, *args, **kwargs)
+        plt.title(view_names[view])
+    plt.axis("scaled")
+    plt.xlim(-limit, limit)
+    plt.ylim(-limit, limit)
+    plt.axis("off")
+    plt.xlabel(labels[id1], labelpad=0)
+    plt.ylabel(labels[id2], labelpad=0)
 
-    def projection(Data, id1, id2):
-        for data in Data:
-            labels = ["X", "Y", "Z"]
-            if not color is None:
-                plt.scatter(data[:, id1], data[:, id2], s=1, color=color, alpha=0.1)
-            else:
-                plt.scatter(data[:, id1], data[:, id2], s=1, alpha=0.1)
-        plt.axis("scaled")
-        plt.xlim(-limit, limit)
-        plt.ylim(-limit, limit)
-        plt.axis("off")
-        plt.xlabel(labels[id1], labelpad=0)
-        plt.ylabel(labels[id2], labelpad=0)
 
-    fig = plt.figure()
+def create_view_projection_figure(data, view=None, path=None, *args, **kwargs):
+    fig = plt.figure(frameon=False)
     plt.tight_layout()
-    plt.subplot(1, 3, 1)
-    plt.title("Top View")
-    projection(data, 0, 1)
-    plt.subplot(1, 3, 2)
-    plt.title("Front View")
-    projection(data, 0, 2)
-    plt.subplot(1, 3, 3)
-    plt.title("Side View")
-    projection(data, 1, 2)
+    if view is None:
+        for i in range(3):
+            plt.subplot(1, 3, i + 1)
+            plot_view_projection(data, i, *args, **kwargs)
+    else:
+        plot_view_projection(data, view, *args, **kwargs)
     if path is None:
         plt.show()
     else:
