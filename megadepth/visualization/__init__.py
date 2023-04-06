@@ -9,7 +9,7 @@ def pca(data):
     """
     mean = data.mean(axis=0)
     standardized_data = data - mean
-    scale = standardized_data.std()
+    scale = data.std()
     standardized_data /= scale
     covariance_matrix = np.cov(standardized_data, ddof=0, rowvar=False)
     eigenvalues, eigenvectors = np.linalg.eig(covariance_matrix)
@@ -18,7 +18,7 @@ def pca(data):
     sorted_eigenvectors = eigenvectors[:, order_of_importance]  # sort the columns
     k = 3  # select the number of principal components
     reduced_data = standardized_data @ sorted_eigenvectors[:, :k]
-    return lambda x: (x - mean) @ sorted_eigenvectors
+    return lambda x: (x - mean) / scale @ sorted_eigenvectors
 
 
 def plot_view_projection(Data, view, limit=10, s=1, alpha=0.1, *args, **kwargs):
@@ -38,6 +38,18 @@ def plot_view_projection(Data, view, limit=10, s=1, alpha=0.1, *args, **kwargs):
 
 
 def create_view_projection_figure(data, view=None, path=None, *args, **kwargs):
+    """
+    Creates an axis aligned plot.
+
+    Args:
+        data: np.ndarray of shape (N, 3)
+        view: int to select from ["Top View", "Front View", "Right View"]
+        path: filepath to store the plot
+        alpha: set transparency for dots
+        s: size for dots
+        limit: limits of the plot limit=3 should contain 99% of the camera positions
+
+    """
     fig = plt.figure(frameon=False)
     plt.tight_layout()
     if view is None:
