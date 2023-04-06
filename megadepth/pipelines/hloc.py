@@ -119,7 +119,7 @@ class HlocPipeline(Pipeline):
 
         logging.debug("Matching features with hloc")
         logging.debug(f"Matcher config: {self.configs['matcher']}")
-        logging.debug(f"Loading pairs form {self.paths.matches_retrieval}")
+        logging.debug(f"Loading pairs from {self.paths.matches_retrieval}")
         logging.debug(f"Loading features from {self.paths.features}")
         logging.debug(f"Storing matches to {self.paths.matches}")
 

@@ -290,7 +290,7 @@ class DataPaths:
         retrieval_name = f"{args.retrieval}"
         retrieval_name += (
             ".txt"
-            if args.retrieval != Retrieval.EXHAUSTIVE.value
+            if args.retrieval == Retrieval.EXHAUSTIVE.value
             else f"-{args.n_retrieval_matches}.txt"
         )
 
@@ -309,7 +309,7 @@ class DataPaths:
         # features
         if args.matcher == Matcher.LOFTR.value:
             self.features = Path(
-                os.path.join(self.data, args.features_dir, f"{args.model_name}.h5")
+                os.path.join(self.data, args.features_dir, f"{self.model_name}.h5")
             )
         else:
             self.features = Path(os.path.join(self.data, args.features_dir, f"{args.features}.h5"))

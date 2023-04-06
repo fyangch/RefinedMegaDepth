@@ -34,9 +34,9 @@ class LoftrPipeline(HlocPipeline):
 
         logging.debug("Matching and extracting features with LoFTR")
         logging.debug(f"Matcher config: {self.configs['matcher']}")
-        logging.debug(f"Loading pairs form {self.paths.matches_retrieval}")
-        logging.debug(f"Loading features from {self.paths.features}")
+        logging.debug(f"Loading pairs from {self.paths.matches_retrieval}")
         logging.debug(f"Storing matches to {self.paths.matches}")
+        logging.debug(f"Storing features to {self.paths.features}")
 
         os.makedirs(self.paths.matches.parent, exist_ok=True)
         os.makedirs(self.paths.features.parent, exist_ok=True)
