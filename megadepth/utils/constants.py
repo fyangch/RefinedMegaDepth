@@ -32,6 +32,7 @@ class Matcher(Enum):
     SUPERGLUE = "superglue"
     NN_RATIO = "NN-ratio"
     NN_MUTUAL = "NN-mutual"
+    LOFTR = "loftr"
 
 
 class PairsFrom(Enum):

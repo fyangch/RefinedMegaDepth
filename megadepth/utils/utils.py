@@ -8,7 +8,7 @@ from pathlib import Path
 
 import numpy as np
 import pycolmap
-from hloc import extract_features, match_features
+from hloc import extract_features, match_dense, match_features
 
 import megadepth.utils.projections as projections
 from megadepth.utils.constants import Features, Matcher, Retrieval
@@ -251,13 +251,23 @@ def get_configs(args: argparse.Namespace) -> dict:
     Returns:
         dict: A dictionary of configuration parameters.
     """
-    conf = {
-        "retrieval": extract_features.confs[args.retrieval]
+    retrieval_conf = (
+        extract_features.confs[args.retrieval]
         if args.retrieval
         not in [Retrieval.POSES.value, Retrieval.COVISIBILITY.value, Retrieval.EXHAUSTIVE.value]
-        else None,
+        else None
+    )
+
+    matcher_conf = (
+        match_dense.confs[args.matcher]
+        if args.matcher == Matcher.LOFTR.value
+        else match_features.confs[args.matcher]
+    )
+
+    conf = {
+        "retrieval": retrieval_conf,
         "feature": extract_features.confs[args.features],
-        "matcher": match_features.confs[args.matcher],
+        "matcher": matcher_conf,
     }
 
     if args.features == Features.SIFT.value:
@@ -297,7 +307,12 @@ class DataPaths:
         )
 
         # features
-        self.features = Path(os.path.join(self.data, args.features_dir, f"{args.features}.h5"))
+        if args.matcher == Matcher.LOFTR.value:
+            self.features = Path(
+                os.path.join(self.data, args.features_dir, f"{args.model_name}.h5")
+            )
+        else:
+            self.features = Path(os.path.join(self.data, args.features_dir, f"{args.features}.h5"))
 
         # matches
         self.matches = Path(os.path.join(self.data, args.matches_dir, f"{self.model_name}.h5"))
@@ -329,6 +344,8 @@ class DataPaths:
             return args.model_name
         elif args.colmap:
             return "colmap"
+        elif args.matcher == Matcher.LOFTR.value:
+            return f"{args.matcher}-{args.retrieval}-{args.n_retrieval_matches}"
         else:
             return f"{args.features}-{args.matcher}-{args.retrieval}-{args.n_retrieval_matches}"
 
