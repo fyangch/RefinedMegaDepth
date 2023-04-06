@@ -15,9 +15,12 @@ def pca(data):
     eigenvalues, eigenvectors = np.linalg.eig(covariance_matrix)
     order_of_importance = np.argsort(eigenvalues)[::-1]
     sorted_eigenvalues = eigenvalues[order_of_importance]
-    sorted_eigenvectors = eigenvectors[:, order_of_importance]  # sort the columns
-    k = 3  # select the number of principal components
-    reduced_data = standardized_data @ sorted_eigenvectors[:, :k]
+    sorted_eigenvectors = eigenvectors[:, order_of_importance]
+    # Ensure handedness doesnt change
+    if np.linalg.det(sorted_eigenvectors) < 0:
+        sign = np.sign(np.ones((1, 3)) @ sorted_eigenvectors)
+        det_sign = np.linalg.det(sorted_eigenvectors)
+        sorted_eigenvectors = sorted_eigenvectors * sign * det_sign
     return lambda x: (x - mean) / scale @ sorted_eigenvectors
 
 
