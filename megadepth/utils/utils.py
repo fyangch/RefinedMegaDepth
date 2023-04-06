@@ -251,7 +251,7 @@ def get_configs(args: argparse.Namespace) -> dict:
     Returns:
         dict: A dictionary of configuration parameters.
     """
-    confs = {
+    return {
         "retrieval": extract_features.confs[args.retrieval]
         if args.retrieval
         not in [Retrieval.POSES.value, Retrieval.COVISIBILITY.value, Retrieval.EXHAUSTIVE.value]
@@ -259,12 +259,6 @@ def get_configs(args: argparse.Namespace) -> dict:
         "feature": extract_features.confs[args.features],
         "matcher": match_features.confs[args.matcher],
     }
-
-    if args.features == Features.SIFT.value:
-        confs["feature"]["preprocessing"]["resize_max"] = 3200
-        # confs["feature"]["preprocessing"]["grayscale"] = False # Raises error
-
-    return confs
 
 
 class DataPaths:
