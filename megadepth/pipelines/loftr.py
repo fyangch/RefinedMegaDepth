@@ -18,7 +18,7 @@ class LoftrPipeline(HlocPipeline):
     def __init__(self, args: argparse.Namespace) -> None:
         """Initialize the pipeline."""
         super().__init__(args)
-        self.preproc_dir = os.path.join(self.paths.data, "images_loftr")
+        self.preproc_dir = self.paths.data / "images_loftr"
 
     def extract_features(self) -> None:
         """Extract features from images."""
