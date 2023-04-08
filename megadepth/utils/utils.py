@@ -258,11 +258,11 @@ def get_configs(args: argparse.Namespace) -> dict:
         else None
     )
 
-    matcher_conf = (
-        match_dense.confs[args.matcher]
-        if args.matcher == Matcher.LOFTR.value
-        else match_features.confs[args.matcher]
-    )
+    if args.matcher == Matcher.LOFTR.value:
+        matcher_conf = match_dense.confs[args.matcher]
+        matcher_conf["preprocessing"]["resize_max"] = 840
+    else:
+        matcher_conf = match_features.confs[args.matcher]
 
     conf = {
         "retrieval": retrieval_conf,

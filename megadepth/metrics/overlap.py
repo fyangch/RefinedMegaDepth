@@ -108,6 +108,9 @@ def dense_overlap(
         )
 
         for j, k2 in enumerate(images.keys()):
+            if i == j:
+                continue
+
             # load second image, camera and depth map
             image_2 = images[k2]
             camera_2 = cameras[image_2.camera_id]
