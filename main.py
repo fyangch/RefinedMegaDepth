@@ -5,7 +5,7 @@ import logging
 import time
 
 from megadepth.metrics.metadata import collect_metrics
-from megadepth.utils.constants import ModelType
+from megadepth.utils.constants import Matcher, ModelType
 from megadepth.utils.utils import DataPaths, setup
 
 
@@ -25,6 +25,10 @@ def main():
         from megadepth.pipelines.colmap import ColmapPipeline
 
         pipeline = ColmapPipeline(args)
+    elif args.matcher == Matcher.LOFTR.value:
+        from megadepth.pipelines.loftr import LoftrPipeline
+
+        pipeline = LoftrPipeline(args)
     else:
         from megadepth.pipelines.hloc import HlocPipeline
 
