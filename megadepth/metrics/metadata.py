@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Any, Dict, Tuple, Union
 
 import numpy as np
+import pandas as pd
 import pycolmap
 
 from megadepth.metrics.overlap import dense_overlap, sparse_overlap
@@ -49,6 +50,13 @@ def collect_metrics(
     )
     metrics["n_images"] = n_images
     metrics["perc_reg_images"] = metrics["n_reg_images"] / n_images * 100
+
+    # number of registered nighttime images (if metadata is available)
+    if os.path.exists(paths.metrics.parent / "night_images.csv"):
+        df = pd.read_csv(paths.metrics.parent / "night_images.csv", index_col=0)
+        metrics["n_night_images"] = len(
+            [img for img in reconstruction.images.values() if df.loc[img.name, "is_night"]]
+        )
 
     # mean overlap
     metrics["mean_overlap"] = np.mean(overlap)
