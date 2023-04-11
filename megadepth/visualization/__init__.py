@@ -5,29 +5,49 @@ import numpy as np
 import pycolmap
 from matplotlib.image import imread
 
+import megadepth.visualization.view_overlap as view_overlap
 import megadepth.visualization.view_projections as view_projections
+from megadepth.metrics import overlap
 from megadepth.utils.projections import backward_project, forward_project
 from megadepth.utils.read_write_dense import read_array
 from megadepth.utils.utils import camera_pixel_grid, get_camera_poses
 
 
-def create_all_figures(model_path, output_path):
+def join(output_path, *parts):
+    if output_path is None:
+        return None
+    return os.path.join(output_path, *parts)
+
+
+def create_all_figures(sparse_model_path, output_path):
     """
         Loads a reconstrucion and stores all necessary plots.
 
     Args:
-        model_path: folder path of the sparse model
+        sparse_model_path: folder path of the sparse model
         output_path: folder path where the plots should go
     """
-    reconstruction = pycolmap.Reconstruction(model_path)
+    reconstruction = pycolmap.Reconstruction(sparse_model_path)
     camera_poses = get_camera_poses(reconstruction)
     points = np.array([p.xyz for p in reconstruction.points3D.values()])
     align = view_projections.pca(camera_poses)
     # alternative to pca
     # align = lambda x: x @ np.array([[0, -1, 0], [0, 0, -1], [1, 0, 0]])
-    out_file = os.path.join(output_path, "all_views.jpg") if not output_path is None else None
+    out_file = join(output_path, "all_views.jpg")
     view_projections.create_view_projection_figure(
         [align(points), align(camera_poses)], limit=3, path=out_file
+    )
+
+    # sparse overlap matrix
+    sparse_overlap_matrix = overlap.sparse_overlap(reconstruction)
+    view_overlap.show_matrix(
+        sparse_overlap_matrix, os.path.join(output_path, "sparse_overlap_matrix.jpg")
+    )
+    view_overlap.vis_overlap(
+        sparse_overlap_matrix,
+        align(camera_poses),
+        align(points),
+        os.path.join(output_path, "vis_sparse_overlap.jpg"),
     )
 
 
@@ -53,7 +73,7 @@ def scatter3d(data, color=None, s=3):
     plt.show()
 
 
-def camera_pose_and_overlap(camera_poses, overlap_matrix):
+def camera_pose_and_overlap(camera_poses, overlap_matrix, path=None):
     points = camera_poses
     weights = overlap_matrix.astype(float)
     weights /= np.max(weights)

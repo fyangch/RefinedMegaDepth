@@ -1,4 +1,4 @@
-"""Script to create an overview csv file from all metrics files."""
+"""Script to create visualizations for all reconstructions."""
 
 import argparse
 import logging
