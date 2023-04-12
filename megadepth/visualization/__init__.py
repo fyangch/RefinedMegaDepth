@@ -19,7 +19,7 @@ def join(output_path, *parts):
     return os.path.join(output_path, *parts)
 
 
-def create_all_figures(sparse_model_path, output_path):
+def create_all_figures(sparse_model_path, output_path, depth_path=None):
     """
         Loads a reconstrucion and stores all necessary plots.
 
@@ -27,28 +27,47 @@ def create_all_figures(sparse_model_path, output_path):
         sparse_model_path: folder path of the sparse model
         output_path: folder path where the plots should go
     """
-    reconstruction = pycolmap.Reconstruction(sparse_model_path)
-    camera_poses = get_camera_poses(reconstruction)
-    points = np.array([p.xyz for p in reconstruction.points3D.values()])
-    align = view_projections.pca(camera_poses)
-    # alternative to pca
-    # align = lambda x: x @ np.array([[0, -1, 0], [0, 0, -1], [1, 0, 0]])
-    out_file = join(output_path, "all_views.jpg")
-    view_projections.create_view_projection_figure(
-        [align(points), align(camera_poses)], limit=3, path=out_file
-    )
+    try:
+        reconstruction = pycolmap.Reconstruction(sparse_model_path)
+        camera_poses = get_camera_poses(reconstruction)
+        points = np.array([p.xyz for p in reconstruction.points3D.values()])
+        align = view_projections.pca(camera_poses)
+        # alternative to pca
+        # align = lambda x: x @ np.array([[0, -1, 0], [0, 0, -1], [1, 0, 0]])
+        out_file = join(output_path, "all_views.jpg")
+        view_projections.create_view_projection_figure(
+            [align(points), align(camera_poses)], limit=3, path=out_file
+        )
 
-    # sparse overlap matrix
-    sparse_overlap_matrix = overlap.sparse_overlap(reconstruction)
-    view_overlap.show_matrix(
-        sparse_overlap_matrix, os.path.join(output_path, "sparse_overlap_matrix.jpg")
-    )
-    view_overlap.vis_overlap(
-        sparse_overlap_matrix,
-        align(camera_poses),
-        align(points),
-        os.path.join(output_path, "vis_sparse_overlap.jpg"),
-    )
+        # sparse overlap matrix
+        sparse_overlap_matrix = overlap.sparse_overlap(reconstruction)
+        view_overlap.show_matrix(
+            sparse_overlap_matrix, os.path.join(output_path, "sparse_overlap_matrix.jpg")
+        )
+        view_overlap.vis_overlap(
+            sparse_overlap_matrix,
+            align(camera_poses),
+            align(points),
+            os.path.join(output_path, "vis_sparse_overlap.jpg"),
+        )
+
+        if not depth_path is None:
+            dense_overlap_matrix = overlap.dense_overlap(reconstruction, depth_path=depth_path)
+            view_overlap.show_matrix(
+                dense_overlap_matrix,
+                os.path.join(
+                    output_path,
+                    "dense_overlap_matrix.jpg",
+                ),
+            )
+            view_overlap.vis_overlap(
+                dense_overlap_matrix,
+                align(camera_poses),
+                align(points),
+                os.path.join(output_path, "vis_dense_overlap.jpg"),
+            )
+    except Exception as e:
+        print(e)
 
 
 def scatter3d(data, color=None, s=3):
