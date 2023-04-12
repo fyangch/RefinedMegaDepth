@@ -39,6 +39,7 @@ def vis_overlap_loop(matrix, poses, points=np.zeros((0, 3)), path=None, *args, *
         plt.show()
     else:
         fig.savefig(path, dpi=900, bbox_inches="tight")
+    plt.close(fig)
 
 
 def vis_overlap(matrix, poses, points=np.zeros((0, 3)), path=None, *args, **kwargs):
@@ -83,3 +84,4 @@ def vis_overlap(matrix, poses, points=np.zeros((0, 3)), path=None, *args, **kwar
         plt.show()
     else:
         fig.savefig(path, dpi=900, bbox_inches="tight")
+    plt.close(fig)
