@@ -10,7 +10,6 @@ import numpy as np
 import pycolmap
 from hloc import extract_features, match_dense, match_features
 
-import megadepth.utils.projections as projections
 from megadepth.utils.constants import Features, Matcher, Retrieval
 
 
@@ -251,6 +250,7 @@ def get_configs(args: argparse.Namespace) -> dict:
     Returns:
         dict: A dictionary of configuration parameters.
     """
+    # retrieval config
     retrieval_conf = (
         extract_features.confs[args.retrieval]
         if args.retrieval
@@ -258,22 +258,23 @@ def get_configs(args: argparse.Namespace) -> dict:
         else None
     )
 
+    # feature config
+    feature_config = extract_features.confs[args.features]
+    if args.features == Features.SIFT.value:
+        feature_config["preprocessing"]["resize_max"] = 3200
+
+    # matcher config
     if args.matcher == Matcher.LOFTR.value:
         matcher_conf = match_dense.confs[args.matcher]
         matcher_conf["preprocessing"]["resize_max"] = 840
     else:
         matcher_conf = match_features.confs[args.matcher]
 
-    conf = {
+    return {
         "retrieval": retrieval_conf,
-        "feature": extract_features.confs[args.features],
+        "feature": feature_config,
         "matcher": matcher_conf,
     }
-
-    if args.features == Features.SIFT.value:
-        conf["feature"]["preprocessing"]["resize_max"] = 3200
-
-    return conf
 
 
 class DataPaths:
@@ -346,31 +347,7 @@ class DataPaths:
             return "colmap"
         elif args.matcher == Matcher.LOFTR.value:
             return f"{args.matcher}-{args.retrieval}-{args.n_retrieval_matches}"
+        elif args.retrieval == Retrieval.EXHAUSTIVE.value:
+            return f"{args.features}-{args.matcher}-{args.retrieval}"
         else:
             return f"{args.features}-{args.matcher}-{args.retrieval}-{args.n_retrieval_matches}"
-
-
-def get_camera_poses(reconstruction) -> np.ndarray:
-    """Extracts camera positions from reconstruction.
-
-    Args:
-        reconstruction: pycolmap.Reconstruction(/path)
-
-    Returns:
-        np.ndarray: of shape (N, 3)
-    """
-    cameras = reconstruction.cameras
-    images = reconstruction.images
-
-    N = len(images)
-    camera_poses = np.zeros((N, 3))
-    for i, k1 in enumerate(images.keys()):
-        image_1 = images[k1]
-        camera_1 = cameras[image_1.camera_id]
-        camera_poses[i] = projections.backward_project(
-            points_2d=np.array([[0, 0]]),
-            image=image_1,
-            camera=camera_1,
-            depth=0,
-        )
-    return camera_poses

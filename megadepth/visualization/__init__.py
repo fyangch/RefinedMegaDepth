@@ -3,14 +3,11 @@ import os
 import matplotlib.pyplot as plt
 import numpy as np
 import pycolmap
-from matplotlib.image import imread
 
 import megadepth.visualization.view_overlap as view_overlap
 import megadepth.visualization.view_projections as view_projections
 from megadepth.metrics import overlap
-from megadepth.utils.projections import backward_project, forward_project
-from megadepth.utils.read_write_dense import read_array
-from megadepth.utils.utils import camera_pixel_grid, get_camera_poses
+from megadepth.utils.projections import get_camera_poses
 
 
 def join(output_path, *parts):

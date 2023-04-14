@@ -16,6 +16,7 @@ def main(args: argparse.Namespace):
     for scene in scenes:
         models = os.listdir(scene)
         models = [f for f in models if not f.startswith(".")]
+        models = [f for f in models if os.path.isdir(os.path.join(scene, f))]
         for model in models:
             fnames = os.listdir(os.path.join(scene, model))
             fnames = [f for f in fnames if f.endswith(".json") and not f.startswith(".")]

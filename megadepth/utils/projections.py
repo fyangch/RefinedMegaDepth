@@ -61,3 +61,29 @@ def backward_project(
     p_world = np.array(image.transform_to_world(p_world.T))
 
     return p_world
+
+
+def get_camera_poses(reconstruction) -> np.ndarray:
+    """Extracts camera positions from reconstruction.
+
+    Args:
+        reconstruction: pycolmap.Reconstruction(/path)
+
+    Returns:
+        np.ndarray: of shape (N, 3)
+    """
+    cameras = reconstruction.cameras
+    images = reconstruction.images
+
+    N = len(images)
+    camera_poses = np.zeros((N, 3))
+    for i, k1 in enumerate(images.keys()):
+        image_1 = images[k1]
+        camera_1 = cameras[image_1.camera_id]
+        camera_poses[i] = backward_project(
+            points_2d=np.array([[0, 0]]),
+            image=image_1,
+            camera=camera_1,
+            depth=0,
+        )
+    return camera_poses

@@ -3,7 +3,6 @@ import argparse
 import datetime
 import logging
 import os
-import shutil
 import time
 
 from hloc import (
@@ -155,9 +154,6 @@ class HlocPipeline(Pipeline):
             matches=self.paths.matches,
             verbose=self.args.verbose,
         )
-
-        # delete empty "models" folder
-        shutil.rmtree(str(self.paths.sparse / "models"))
 
         end = time.time()
         logging.info(f"Time to run SFM: {datetime.timedelta(seconds=end - start)}")
