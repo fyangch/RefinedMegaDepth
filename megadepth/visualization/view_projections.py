@@ -77,3 +77,4 @@ def create_view_projection_figure(data, view=None, path=None, *args, **kwargs):
         plt.show()
     else:
         fig.savefig(path, dpi=900, bbox_inches="tight")
+    plt.close(fig)

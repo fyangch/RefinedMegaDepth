@@ -7,6 +7,7 @@ import time
 from abc import abstractmethod
 
 import pycolmap
+from hloc.reconstruction import create_empty_db, get_image_ids, import_images
 
 from megadepth.utils.constants import ModelType
 from megadepth.utils.utils import DataPaths, get_configs
@@ -61,6 +62,30 @@ class Pipeline:
                 return False
         else:
             raise ValueError(f"Invalid model type: {model}")
+
+    def preprocess(self) -> None:
+        """Remove corrupted and other problematic images as a preprocessing step."""
+        self.log_step("Preprocessing images...")
+        start = time.time()
+
+        # create dummy database and try to import all images
+        database = self.paths.data / "tmp_database.db"
+        create_empty_db(database)
+        import_images(self.paths.images, database, pycolmap.CameraMode.AUTO)
+        image_ids = get_image_ids(database)
+
+        # delete image files that were not successfully imported
+        image_fns = [fn for fn in os.listdir(self.paths.images) if fn not in image_ids]
+        for fn in image_fns:
+            path = self.paths.images / fn
+            logging.info(f"Deleting invalid image at {path}")
+            path.unlink()
+
+        # delete dummy database
+        database.unlink()
+
+        end = time.time()
+        logging.info(f"Time to preprocess images: {datetime.timedelta(seconds=end - start)}")
 
     @abstractmethod
     def get_pairs(self) -> None:
@@ -131,6 +156,7 @@ class Pipeline:
 
     def run(self) -> None:
         """Run the pipeline."""
+        self.preprocess()
         self.get_pairs()
         self.extract_features()
         self.match_features()

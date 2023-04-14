@@ -35,6 +35,7 @@ def main():
         pipeline = HlocPipeline(args)
 
     # run pipeline
+    pipeline.preprocess()
     pipeline.get_pairs()
     pipeline.extract_features()
     pipeline.match_features()

@@ -55,7 +55,7 @@ def sparse_overlap(reconstruction: pycolmap.Reconstruction) -> np.ndarray:
 def dense_overlap(
     reconstruction: pycolmap.Reconstruction,
     depth_path: Union[Path, str],
-    downsample: int = 10,
+    downsample: int = 50,
     rel_thresh: float = 0.03,
 ) -> np.ndarray:
     """Computes the dense overlap metric between a list of images.

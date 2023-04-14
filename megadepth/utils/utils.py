@@ -137,6 +137,12 @@ def setup_args() -> argparse.Namespace:
         default="results",
         help="Path to the results.",
     )
+    parser.add_argument(
+        "--visualizations_dir",
+        type=Path,
+        default="visualizations",
+        help="Path to the visualizations.",
+    )
 
     # MODEL RELATED ARGUMENTS
     parser.add_argument(
@@ -327,6 +333,9 @@ class DataPaths:
         # output
         self.metrics = Path(os.path.join(self.data, args.metrics_dir, self.model_name))
         self.results = Path(os.path.join(self.data, args.results_dir, self.model_name))
+        self.visualizations = Path(
+            os.path.join(self.data, args.visualizations_dir, self.model_name)
+        )
 
         logging.debug("Data paths:")
         for path, val in vars(self).items():
