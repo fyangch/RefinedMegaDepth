@@ -12,6 +12,7 @@ import matplotlib
 import matplotlib.patheffects as path_effects
 import matplotlib.pyplot as plt
 import numpy as np
+import pycolmap
 
 
 def cm_RdGn(x: np.ndarray) -> np.ndarray:
@@ -324,3 +325,14 @@ def save_plot(path: str, **kw) -> None:
         **kw: Additional keyword arguments to pass to `plt.savefig`.
     """
     plt.savefig(path, bbox_inches="tight", pad_inches=0, **kw)
+
+
+def view_samples(model: pycolmap.Reconstruction, n_samples: int = 5):
+    """View a random sample of images from the reconstruction.
+
+    Args:
+        model (pycolmap.Reconstruction): Reconstruction to view.
+        n_samples (int, optional): Number of images to view. Defaults to 5.
+    """
+    # TODO: Get matched images from the reconstruction and plot epipolar lines.
+    pass

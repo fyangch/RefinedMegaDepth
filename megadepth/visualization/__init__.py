@@ -1,4 +1,5 @@
 import os
+from typing import Optional
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -10,19 +11,32 @@ from megadepth.metrics import overlap
 from megadepth.utils.projections import get_camera_poses
 
 
-def join(output_path, *parts):
-    if output_path is None:
-        return None
-    return os.path.join(output_path, *parts)
-
-
-def create_all_figures(sparse_model_path, output_path, depth_path=None):
-    """
-        Loads a reconstrucion and stores all necessary plots.
+def join(
+    output_path: str,
+    *parts: str,
+) -> str:
+    """Join path parts with output_path.
 
     Args:
-        sparse_model_path: folder path of the sparse model
-        output_path: folder path where the plots should go
+        output_path (str): Path to the output folder
+
+    Returns:
+        str: Path to the output folder
+    """
+    return None if output_path is None else os.path.join(output_path, *parts)
+
+
+def create_all_figures(
+    sparse_model_path: str,
+    output_path: str,
+    depth_path: Optional[str] = None,
+) -> None:
+    """Loads a reconstrucion and stores all necessary plots.
+
+    Args:
+        sparse_model_path (str): Path to the sparse model
+        output_path (str): Path to the output folder
+        depth_path (Optional[str], optional): Path to the depth maps. Defaults to None.
     """
     try:
         reconstruction = pycolmap.Reconstruction(sparse_model_path)
@@ -48,7 +62,7 @@ def create_all_figures(sparse_model_path, output_path, depth_path=None):
             os.path.join(output_path, "vis_sparse_overlap.jpg"),
         )
 
-        if not depth_path is None:
+        if depth_path is not None:
             dense_overlap_matrix = overlap.dense_overlap(reconstruction, depth_path=depth_path)
             view_overlap.show_matrix(
                 dense_overlap_matrix,
@@ -67,7 +81,18 @@ def create_all_figures(sparse_model_path, output_path, depth_path=None):
         print(e)
 
 
-def scatter3d(data, color=None, s=3):
+def scatter3d(
+    data: np.ndarray,
+    color: Optional[str] = None,
+    s: float = 3,
+) -> None:
+    """Creates a 3D scatter plot.
+
+    Args:
+        data (np.ndarray): Points to plot.
+        color (Optional[str], optional): Color of the points. Defaults to None.
+        s (float, optional): Size of the points. Defaults to 3.
+    """
     # Create a 3D figure
     fig = plt.figure()
     ax = plt.axes(projection="3d")
@@ -89,7 +114,13 @@ def scatter3d(data, color=None, s=3):
     plt.show()
 
 
-def camera_pose_and_overlap(camera_poses, overlap_matrix, path=None):
+def camera_pose_and_overlap(camera_poses: np.ndarray, overlap_matrix: np.ndarray) -> None:
+    """Creates a 3D plot of the camera poses and the overlap matrix.
+
+    Args:
+        camera_poses (np.ndarray): Camera poses in the reconstruction.
+        overlap_matrix (np.ndarray): Overlap matrix of the reconstruction.
+    """
     points = camera_poses
     weights = overlap_matrix.astype(float)
     weights /= np.max(weights)

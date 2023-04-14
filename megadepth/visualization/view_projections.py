@@ -1,9 +1,11 @@
 """This module provides functions to visualize 3D points in an axis aligned plot."""
+from typing import Callable, Optional
+
 import matplotlib.pyplot as plt
 import numpy as np
 
 
-def pca(data):
+def pca(data: np.ndarray) -> Callable[[np.ndarray], np.ndarray]:
     """Computes pca on the data matrix and returns a coordinate transform as a lambda function.
 
     Args:
@@ -29,15 +31,18 @@ def pca(data):
     return lambda x: (x - mean) / scale @ sorted_eigenvectors
 
 
-def plot_view_projection(Data, view, limit=10, s=1, alpha=0.1, *args, **kwargs):
+def plot_view_projection(
+    Data: np.ndarray, view: int, limit: int = 10, s: float = 1, alpha: float = 0.1, *args, **kwargs
+) -> None:
     """Creates an axis aligned plot.
 
     Args:
-        Data: list of np.ndarrays of shape (N, 3) [np.ndarray, ..]
-        view: int to select from ["Top View", "Front View", "Right View"]
-        alpha: set transparency for dots
-        s: size for dots
-        limit: limits of the plot limit=3 should contain 99% of the camera positions
+        Data (np.ndarray): List of np.ndarrays of shape (N, 3) [np.ndarray, ..]
+        view (int): Int to select from ["Top View", "Front View", "Right View"]
+        limit (int, optional): Limits of the plot limit=3 should contain 99% of the camera
+        positions. Defaults to 10.
+        s (float, optional): Size for dots. Defaults to 1.
+        alpha (float, optional): Set transparency for dots. Defaults to 0.1.
     """
     view_names = ["Top View", "Front View", "Right View"]
     id1, id2 = [(0, 1), (0, 2), (1, 2)][view]
@@ -53,17 +58,19 @@ def plot_view_projection(Data, view, limit=10, s=1, alpha=0.1, *args, **kwargs):
     plt.ylabel(labels[id2], labelpad=0)
 
 
-def create_view_projection_figure(data, view=None, path=None, *args, **kwargs):
+def create_view_projection_figure(
+    data: np.ndarray,
+    view: Optional[int] = None,
+    path: Optional[str] = None,
+    *args,
+    **kwargs,
+) -> None:
     """Creates an axis aligned plot.
 
     Args:
-        data: np.ndarray of shape (N, 3)
-        view: int to select from ["Top View", "Front View", "Right View"]
-        path: filepath to store the plot
-        alpha: set transparency for dots
-        s: size for dots
-        limit: limits of the plot limit=3 should contain 99% of the camera positions
-
+        data (np.ndarray): List of np.ndarrays of shape (N, 3) [np.ndarray, ..]
+        view (Optional[int], optional): Int to select from ["Top View", "Front View", "Right View"]
+        path (Optional[str], optional): Filepath to store the plot. Defaults to None.
     """
     fig = plt.figure()
     plt.tight_layout()
