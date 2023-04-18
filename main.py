@@ -8,6 +8,8 @@ from megadepth.metrics.metadata import collect_metrics
 from megadepth.utils.constants import Matcher, ModelType
 from megadepth.utils.utils import DataPaths, setup
 
+# from megadepth.visualization.view_sparse_model import create_movie
+
 
 def main():
     """Run the mega depth pipeline."""
@@ -18,6 +20,7 @@ def main():
 
     if args.evaluate:
         collect_metrics(paths, args, ModelType.SPARSE)
+        # create_movie(paths)
         return
 
     # create pipeline
@@ -48,6 +51,7 @@ def main():
     # pipeline.run() # -> run all steps
 
     collect_metrics(paths, args, model_type=ModelType.SPARSE)
+    # create_movie(paths)
 
     end = time.time()
     logging.info(f"Total time: {datetime.timedelta(seconds=end - start)}")
