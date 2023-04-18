@@ -5,12 +5,15 @@ import logging
 import os
 import time
 from abc import abstractmethod
+from typing import Optional
 
 import pycolmap
 from hloc.reconstruction import create_empty_db, get_image_ids, import_images
 
 from megadepth.utils.constants import ModelType
-from megadepth.utils.utils import DataPaths, get_configs
+from megadepth.utils.read_write_model import write_model
+from megadepth.utils.setup import DataPaths, get_configs
+from megadepth.visualization.view_projections import align_models
 
 
 class Pipeline:
@@ -26,7 +29,8 @@ class Pipeline:
         self.configs = get_configs(args)
         self.paths = DataPaths(args)
         self.n_images = len(os.listdir(self.paths.images))
-        self.sparse_model = None
+        self.sparse_model: Optional[pycolmap.Reconstruction] = None
+        self.refined_model: Optional[pycolmap.Reconstruction] = None
         self.dense_model = None
 
     def log_step(self, title: str) -> None:
@@ -62,6 +66,42 @@ class Pipeline:
                 return False
         else:
             raise ValueError(f"Invalid model type: {model}")
+
+    def align_with_baseline(self, overwrite: bool = True) -> pycolmap.Reconstruction:
+        """Align the sparse model to the baseline reconstruction.
+
+        Args:
+            overwrite (bool, optional): Whether to overwrite the existing model. Defaults to True.
+
+        Returns:
+            pycolmap.Reconstruction: The aligned reconstruction.
+        """
+        logging.info("Trying to align model to baseline reconstruction...")
+
+        if not self.model_exists(ModelType.SPARSE):
+            raise ValueError("No sparse model found.")
+
+        try:
+            baseline_model = pycolmap.Reconstruction(self.paths.sparse_baseline)
+            logging.info(f"Loaded baseline model from {self.paths.sparse_baseline}")
+        except Exception:
+            logging.warning("No baseline model found. Skipping alignment.")
+            return self.sparse_model
+
+        # align sparse model to baseline model
+        self.sparse_model = align_models(
+            reconstruction_anchor=baseline_model, reconstruction_align=self.sparse_model
+        )
+
+        if overwrite:
+            write_model(
+                cameras=self.sparse_model.cameras,
+                images=self.sparse_model.images,
+                points3D=self.sparse_model.points3D,
+                path=str(self.paths.sparse),
+            )
+
+        return self.sparse_model
 
     def preprocess(self) -> None:
         """Remove corrupted and other problematic images as a preprocessing step."""
@@ -107,21 +147,10 @@ class Pipeline:
         """Run Structure from Motion."""
         pass
 
+    @abstractmethod
     def refinement(self) -> None:
         """Refine the reconstruction using PixSFM."""
-        self.log_step("Refining the reconstruction...")
-        start = time.time()
-
-        os.makedirs(self.paths.sparse, exist_ok=True)
-
-        # TODO: decide if this can be done in the abstract class
-
-        # TODO: implement pixSFM
-
-        end = time.time()
-        logging.info(
-            f"Time to refine the reconstruction: {datetime.timedelta(seconds=end - start)}"
-        )
+        pass
 
     def mvs(self) -> None:
         """Run Multi-View Stereo."""

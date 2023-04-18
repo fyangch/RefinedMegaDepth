@@ -1,8 +1,12 @@
 """This module provides functions to visualize 3D points in an axis aligned plot."""
+
 from typing import Callable, Optional
 
 import matplotlib.pyplot as plt
 import numpy as np
+import pycolmap
+
+from megadepth.utils.projections import get_camera_poses
 
 
 def pca(data: np.ndarray) -> Callable[[np.ndarray], np.ndarray]:
@@ -85,3 +89,27 @@ def create_view_projection_figure(
     else:
         fig.savefig(path, dpi=900, bbox_inches="tight")
     plt.close(fig)
+
+
+def align_models(
+    reconstruction_anchor: pycolmap.Reconstruction,
+    reconstruction_align: pycolmap.Reconstruction,
+    min_common_images: int = 6,
+) -> pycolmap.Reconstruction:
+    """Aligns two reconstructions by aligning the camera positions.
+
+    Args:
+        reconstruction1 (pycolmap.Reconstruction): First reconstruction to align to.
+        reconstruction2 (pycolmap.Reconstruction): Second reconstruction to be aligned.
+        min_common_images (int, optional): Minimum number of common images between the two
+        reconstructions. Defaults to 6.
+
+    Returns:
+        pycolmap.Reconstruction: Aligned reconstructions.
+    """
+    image_names = [img.name for img in reconstruction_anchor.images.values()]
+    locations = get_camera_poses(reconstruction_anchor)
+
+    _ = reconstruction_align.align_robust(image_names, locations, min_common_images)
+
+    return reconstruction_align

@@ -82,3 +82,8 @@ class ColmapPipeline(Pipeline):
 
         end = time.time()
         logging.info(f"Time to run SFM: {datetime.timedelta(seconds=end - start)}")
+
+    def refinement(self) -> None:
+        """Run refinement."""
+        # TODO: implement pixsfm.refine_colmap
+        pass

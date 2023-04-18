@@ -14,7 +14,7 @@ import pycolmap
 
 from megadepth.metrics.overlap import dense_overlap, sparse_overlap
 from megadepth.utils.constants import ModelType
-from megadepth.utils.utils import DataPaths
+from megadepth.utils.setup import DataPaths
 
 
 def collect_metrics(
