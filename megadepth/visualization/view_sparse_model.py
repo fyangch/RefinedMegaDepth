@@ -16,11 +16,11 @@ import open3d as o3d
 import pycolmap
 from tqdm import tqdm
 
-from megadepth.utils.utils import DataPaths
+from megadepth.utils.setup import DataPaths
 
 
 def pcd_from_colmap(
-    rec: pycolmap.Reconstruction, min_track_length: int = 40, max_reprojection_error: int = 8
+    rec: pycolmap.Reconstruction, min_track_length: int = 10, max_reprojection_error: int = 8
 ) -> o3d.geometry.PointCloud:
     """Create an Open3D point cloud from a Colmap reconstruction.
 
@@ -51,13 +51,22 @@ def pcd_from_colmap(
 
 
 @typing.no_type_check
-def render_frames(rec: pycolmap.Reconstruction, store_path: str) -> None:
+def render_frames(
+    rec: pycolmap.Reconstruction,
+    store_path: str,
+    draw_cameras: bool = True,
+    show_window: bool = False,
+) -> None:
     """Rotate the view of the point cloud.
 
     Args:
         rec (pycolmap.Reconstruction): Sparse reconstruction from Colmap.
         store_path (str): Path to store the frames of the animation.
+        draw_cameras (bool, optional): Whether to draw the cameras. Defaults to True.
+        show_window (bool, optional): Whether to open a window to show the animation. Defaults to
+        False.
     """
+    rec.normalize(1, 0, 0.4, 0.6)  # Scale, ??, lower percentile, upper percentile
     render_frames.idx = 0
     render_frames.vis = o3d.visualization.Visualizer()
     render_frames.store_path = store_path
@@ -81,16 +90,55 @@ def render_frames(rec: pycolmap.Reconstruction, store_path: str) -> None:
         glb = render_frames
         glb.idx += 1
 
-        # Rotate the view
-        if glb.idx < 200:
-            ctr.set_lookat([0, -glb.idx / 3, -glb.idx / 2])
-            ctr.rotate(0, 1.0)
-        elif glb.idx < 600:
-            angle = ((glb.idx - 200) / 400) * 2 * np.pi
-            radius = 3
-            ctr.set_lookat(
-                [radius * np.sin(angle), -200 / 3 + radius * np.cos(angle) - radius, -200 / 2]
-            )
+        extrinsic = np.eye(4)
+
+        # set distance
+        t = np.array([0, 0, 3], dtype=np.float64)
+
+        # rotate figure to look at origin
+        R = np.array(
+            [
+                [1, 0, 0],
+                [0, 1, 0],
+                [0, 0, 1],
+            ],
+            dtype=np.float64,
+        )
+
+        angle = (glb.idx / 600) * 2 * np.pi
+        R_y = np.array(
+            [
+                [np.cos(angle), 0, np.sin(angle)],
+                [0, 1, 0],
+                [-np.sin(angle), 0, np.cos(angle)],
+            ],
+            dtype=np.float64,
+        )
+        # rotate around x
+        angle = 30
+        angle = angle / 180 * np.pi
+        R_x = np.array(
+            [
+                [1, 0, 0],
+                [0, np.cos(angle), -np.sin(angle)],
+                [0, np.sin(angle), np.cos(angle)],
+            ],
+            dtype=np.float64,
+        )
+
+        R = R_x @ R_y
+
+        extrinsic[:3, :3] = R
+        extrinsic[:3, 3] = t
+
+        # print(t)
+        # print(extrinsic)
+
+        if glb.idx < 600:
+            camera = ctr.convert_to_pinhole_camera_parameters()
+            camera.extrinsic = extrinsic
+            ctr.convert_from_pinhole_camera_parameters(camera)
+
         else:
             # render_frames.vis.register_animation_callback(None)
             vis.close()
@@ -103,31 +151,32 @@ def render_frames(rec: pycolmap.Reconstruction, store_path: str) -> None:
 
         # Update the progress bar
         glb.pbar.update(1)
-        # print(ctr.convert_to_pinhole_camera_parameters().extrinsic)
 
         return False
 
     vis = render_frames.vis
-    vis.create_window(visible=False)
+    vis.create_window(visible=show_window)
 
     pcd = pcd_from_colmap(rec)
     vis.add_geometry(pcd)
-    pcd.transform([[1, 0, 0, 0], [0, -1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]])
-    # Define the camera frustums as lines
-    camera_lines = {}
-    for camera in rec.cameras.values():
-        camera_lines[camera.camera_id] = o3d.geometry.LineSet.create_camera_visualization(
-            camera.width, camera.height, camera.calibration_matrix(), np.eye(4), scale=0.1
-        )
+    # pcd.transform([[1, 0, 0, 0], [0, -1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]])
 
-    # Draw the frustum for each image
-    for image in rec.images.values():
-        T = np.eye(4)
-        T[:3, :4] = image.inverse_projection_matrix()
-        cam = deepcopy(camera_lines[image.camera_id]).transform(T)
-        cam.paint_uniform_color([1.0, 0.0, 0.0])  # red
-        cam.transform([[1, 0, 0, 0], [0, -1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]])
-        vis.add_geometry(cam)
+    if draw_cameras:
+        # Define the camera frustums as lines
+        camera_lines = {}
+        for camera in rec.cameras.values():
+            camera_lines[camera.camera_id] = o3d.geometry.LineSet.create_camera_visualization(
+                camera.width, camera.height, camera.calibration_matrix(), np.eye(4), scale=0.1
+            )
+
+        # Draw the frustum for each image
+        for image in rec.images.values():
+            T = np.eye(4)
+            T[:3, :4] = image.inverse_projection_matrix()
+            cam = deepcopy(camera_lines[image.camera_id]).transform(T)
+            cam.paint_uniform_color([1.0, 0.0, 0.0])  # red
+            # cam.transform([[1, 0, 0, 0], [0, -1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]])
+            vis.add_geometry(cam)
 
     opt = vis.get_render_option()
     opt.point_size = 1
