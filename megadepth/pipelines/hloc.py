@@ -14,11 +14,10 @@ from hloc import (
     pairs_from_retrieval,
     reconstruction,
 )
+from pixsfm.refine_hloc import PixSfM
 
 from megadepth.pipelines.pipeline import Pipeline
 from megadepth.utils.constants import ModelType, Retrieval
-
-# from pixsfm.refine_hloc import PixSfM
 
 
 class HlocPipeline(Pipeline):
@@ -163,38 +162,38 @@ class HlocPipeline(Pipeline):
         end = time.time()
         logging.info(f"Time to run SFM: {datetime.timedelta(seconds=end - start)}")
 
-    # def refinement(self) -> None:
-    #     """Refine the reconstruction using PixSFM."""
-    #     self.log_step("Refining the reconstruction...")
-    #     start = time.time()
+    def refinement(self) -> None:
+        """Refine the reconstruction using PixSFM."""
+        self.log_step("Refining the reconstruction...")
+        start = time.time()
 
-    #     os.makedirs(self.paths.sparse, exist_ok=True)
-    #     os.makedirs(self.paths.ref_sparse, exist_ok=True)
+        os.makedirs(self.paths.sparse, exist_ok=True)
+        os.makedirs(self.paths.ref_sparse, exist_ok=True)
 
-    #     refiner = PixSfM(conf=self.configs["refinement"])
+        refiner = PixSfM(conf=self.configs["refinement"])
 
-    #     logging.debug("Refining the reconstruction with PixSfM")
-    #     logging.debug(f"Refiner config: {self.configs['refinement']}")
-    #     logging.debug(f"Loading pairs from {self.paths.matches_retrieval}")
-    #     logging.debug(f"Loading features from {self.paths.features}")
-    #     logging.debug(f"Loading matches from {self.paths.matches}")
-    #     logging.debug(f"Loading sparse model from {self.paths.sparse}")
-    #     logging.debug(f"Storing refined model to {self.paths.ref_sparse}")
+        logging.debug("Refining the reconstruction with PixSfM")
+        logging.debug(f"Refiner config: {self.configs['refinement']}")
+        logging.debug(f"Loading pairs from {self.paths.matches_retrieval}")
+        logging.debug(f"Loading features from {self.paths.features}")
+        logging.debug(f"Loading matches from {self.paths.matches}")
+        logging.debug(f"Loading sparse model from {self.paths.sparse}")
+        logging.debug(f"Storing refined model to {self.paths.ref_sparse}")
 
-    #     model, outputs = refiner.run(
-    #         output_dir=self.paths.ref_sparse,
-    #         image_dir=self.paths.images,
-    #         pairs_path=self.paths.matches_retrieval,
-    #         features_path=self.paths.features,
-    #         matches_path=self.paths.matches,
-    #         reference_model_path=self.paths.sparse,
-    #     )
+        model, outputs = refiner.run(
+            output_dir=self.paths.ref_sparse,
+            image_dir=self.paths.images,
+            pairs_path=self.paths.matches_retrieval,
+            features_path=self.paths.features,
+            matches_path=self.paths.matches,
+            reference_model_path=self.paths.sparse,
+        )
 
-    #     self.refined_model = model
+        self.refined_model = model
 
-    #     # TODO: explore outputs. Maybe save to metrics?
+        # TODO: explore outputs. Maybe save to metrics?
 
-    #     end = time.time()
-    #     logging.info(
-    #         f"Time to refine the reconstruction: {datetime.timedelta(seconds=end - start)}"
-    #     )
+        end = time.time()
+        logging.info(
+            f"Time to refine the reconstruction: {datetime.timedelta(seconds=end - start)}"
+        )
