@@ -7,14 +7,13 @@ import os
 from pathlib import Path
 
 from hloc import extract_features, match_dense, match_features
+from pixsfm.base import interpolation_default_conf
+from pixsfm.bundle_adjustment import BundleAdjuster
+from pixsfm.features.extractor import FeatureExtractor
+from pixsfm.keypoint_adjustment import KeypointAdjuster
 
 from megadepth.utils.args import setup_args
 from megadepth.utils.constants import Features, Matcher, Retrieval
-
-# from pixsfm.base import interpolation_default_conf
-# from pixsfm.bundle_adjustment import BundleAdjuster
-# from pixsfm.features.extractor import FeatureExtractor
-# from pixsfm.keypoint_adjustment import KeypointAdjuster
 
 
 def setup() -> argparse.Namespace:
@@ -85,24 +84,24 @@ def get_configs(args: argparse.Namespace) -> dict:
         matcher_conf = match_features.confs[args.matcher]
 
     # refinement config
-    # refinement_conf = {
-    #     "dense_features": {**FeatureExtractor.default_conf},
-    #     "interpolation": interpolation_default_conf,
-    #     "KA": {
-    #         **KeypointAdjuster.default_conf,
-    #         "interpolation": "${..interpolation}",
-    #     },
-    #     "BA": {
-    #         **BundleAdjuster.default_conf,
-    #         "interpolation": "${..interpolation}",
-    #     },
-    # }
+    refinement_conf = {
+        "dense_features": {**FeatureExtractor.default_conf},
+        "interpolation": interpolation_default_conf,
+        "KA": {
+            **KeypointAdjuster.default_conf,
+            "interpolation": "${..interpolation}",
+        },
+        "BA": {
+            **BundleAdjuster.default_conf,
+            "interpolation": "${..interpolation}",
+        },
+    }
 
     return {
         "retrieval": retrieval_conf,
         "feature": feature_config,
         "matcher": matcher_conf,
-        # "refinement": refinement_conf,
+        "refinement": refinement_conf,
     }
 
 
