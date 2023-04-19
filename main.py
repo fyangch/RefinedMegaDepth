@@ -35,6 +35,7 @@ def main():
     if args.evaluate:
         pipeline.align_with_baseline()
         collect_metrics(paths, args, ModelType.SPARSE)
+        collect_metrics(paths, args, ModelType.REFINED)
         # create_movie(paths)
         return
 
@@ -52,6 +53,7 @@ def main():
     # pipeline.run() # -> run all steps
 
     collect_metrics(paths, args, model_type=ModelType.SPARSE)
+    collect_metrics(paths, args, model_type=ModelType.REFINED)
     # create_movie(paths)
 
     end = time.time()

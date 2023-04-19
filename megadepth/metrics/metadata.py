@@ -33,6 +33,9 @@ def collect_metrics(
     if model_type == ModelType.SPARSE:
         reconstruction = pycolmap.Reconstruction(paths.sparse)
         metrics, overlap = collect_sparse(reconstruction)
+    elif model_type == ModelType.REFINED:
+        reconstruction = pycolmap.Reconstruction(paths.ref_sparse)
+        metrics, overlap = collect_sparse(reconstruction)
     elif model_type == ModelType.DENSE:
         reconstruction = pycolmap.Reconstruction(os.path.join(paths.dense, "sparse"))
         depth_map_path = os.path.join(paths.dense, "stereo", "depth_maps")
@@ -69,7 +72,9 @@ def collect_metrics(
     metrics["features"] = args.features
     metrics["matcher"] = args.matcher
 
-    logging.debug(metrics)
+    logging.debug(f"Metrics for {model_type.value} model:")
+    for k, v in metrics.items():
+        logging.debug(f"{k}: {v}")
 
     os.makedirs(paths.metrics, exist_ok=True)
 
