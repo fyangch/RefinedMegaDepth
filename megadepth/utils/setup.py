@@ -54,6 +54,7 @@ def setup_logger(args: argparse.Namespace) -> None:
     )
 
     logging.getLogger("PIL.TiffImagePlugin").setLevel(logging.ERROR)
+    logging.getLogger("PIL.PngImagePlugin").setLevel(logging.ERROR)
 
 
 def get_configs(args: argparse.Namespace) -> dict:
