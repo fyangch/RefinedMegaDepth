@@ -182,7 +182,7 @@ class Pipeline:
 
         logging.info("Running patch_match_stereo...")
         pycolmap.patch_match_stereo(
-            output_path=self.paths.dense,
+            workspace_path=self.paths.dense,
             verbose=self.args.verbose,
         )
 

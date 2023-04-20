@@ -74,7 +74,7 @@ def collect_metrics(
 
     logging.debug(f"Metrics for {model_type.value} model:")
     for k, v in metrics.items():
-        logging.debug(f"{k}: {v}")
+        logging.debug(f"\t{k}: {v}")
 
     os.makedirs(paths.metrics, exist_ok=True)
 
