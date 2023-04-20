@@ -167,6 +167,12 @@ class HlocPipeline(Pipeline):
         self.log_step("Refining the reconstruction...")
         start = time.time()
 
+        if self.model_exists(ModelType.REFINED) and not self.args.overwrite:
+            logging.info(
+                f"Reconstruction exists at {self.paths.ref_sparse}. Skipping refinement..."
+            )
+            return
+
         os.makedirs(self.paths.sparse, exist_ok=True)
         os.makedirs(self.paths.ref_sparse, exist_ok=True)
 

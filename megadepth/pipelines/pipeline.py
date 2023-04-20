@@ -58,6 +58,12 @@ class Pipeline:
                 return True
             except Exception:
                 return False
+        elif model == ModelType.REFINED:
+            try:
+                self.refined_model = pycolmap.Reconstruction(self.paths.ref_sparse)
+                return True
+            except Exception:
+                return False
         elif model == ModelType.DENSE:
             try:
                 self.dense_model = pycolmap.Reconstruction(self.paths.dense)
