@@ -8,8 +8,8 @@ import numpy as np
 import pycolmap
 from tqdm import tqdm
 
+from megadepth.utils.io import load_depth_map
 from megadepth.utils.projections import backward_project, forward_project
-from megadepth.utils.read_write_dense import read_array
 from megadepth.utils.utils import camera_pixel_grid
 
 
@@ -83,7 +83,7 @@ def dense_overlap(
         # load first image, camera and depth map
         image_1 = images[k1]
         camera_1 = cameras[image_1.camera_id]
-        depth_map_1 = read_array(os.path.join(depth_path, f"{image_1.name}.geometric.bin"))
+        depth_map_1 = load_depth_map(os.path.join(depth_path, f"{image_1.name}.geometric.bin"))
 
         # gather depth values that we want to check in a vector
         depth_1 = depth_map_1[::downsample, ::downsample].ravel()
@@ -114,7 +114,7 @@ def dense_overlap(
             # load second image, camera and depth map
             image_2 = images[k2]
             camera_2 = cameras[image_2.camera_id]
-            depth_map_2 = read_array(os.path.join(depth_path, f"{image_2.name}.geometric.bin"))
+            depth_map_2 = load_depth_map(os.path.join(depth_path, f"{image_2.name}.geometric.bin"))
 
             # project all 3D points to image 2 to obtain 2D points and associated depth values
             proj_points_2d, proj_depths = forward_project(

@@ -34,6 +34,36 @@ def save_image(image: np.ndarray, image_path: str) -> None:
     img.save(image_path)
 
 
+def load_depth_map(path: str) -> np.array:
+    """Load the depth map from the given path and return it as a numpy array.
+
+    The code for this function was copied from:
+    https://github.com/colmap/colmap/blob/dev/scripts/python/read_write_dense.py
+
+    Args:
+        path (str): Path to the depth map.
+
+    Returns:
+        np.ndarray: Depth map as a numpy array.
+    """
+    with open(path, "rb") as fid:
+        width, height, channels = np.genfromtxt(
+            fid, delimiter="&", max_rows=1, usecols=(0, 1, 2), dtype=int
+        )
+        fid.seek(0)
+        num_delimiter = 0
+        byte = fid.read(1)
+        while True:
+            if byte == b"&":
+                num_delimiter += 1
+                if num_delimiter >= 3:
+                    break
+            byte = fid.read(1)
+        array = np.fromfile(fid, np.float32)
+    array = array.reshape((width, height, channels), order="F")
+    return np.transpose(array, (1, 0, 2)).squeeze()
+
+
 def get_scene_image_paths(scene: str, args: argparse.Namespace) -> List[str]:
     """Return a list of image paths for the given scene.
 
