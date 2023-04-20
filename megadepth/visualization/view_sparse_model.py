@@ -104,6 +104,10 @@ def render_frames(
         else:
             vis.close()
 
+        # update view
+        vis.poll_events()
+        vis.update_renderer()
+
         # Store the frame in a plot
         frame_every = 2
         if glb.idx % frame_every == 0:
@@ -179,17 +183,17 @@ def get_updated_extrinsics(idx: int) -> np.ndarray:
     )
 
     angle = (idx / 600) * 2 * np.pi
-    R_z = np.array(
+    R_y = np.array(
         [
-            [np.cos(angle), -np.sin(angle), 0],
-            [np.sin(angle), np.cos(angle), 0],
-            [0, 0, 1],
+            [np.cos(angle), 0, np.sin(angle)],
+            [0, 1, 0],
+            [-np.sin(angle), 0, np.cos(angle)],
         ],
         dtype=np.float64,
     )
 
     # rotate around x
-    angle = 120
+    angle = 30
     angle = angle / 180 * np.pi
     R_x = np.array(
         [
@@ -200,7 +204,7 @@ def get_updated_extrinsics(idx: int) -> np.ndarray:
         dtype=np.float64,
     )
 
-    R = R_x @ R_z
+    R = R_x @ R_y @ R
 
     extrinsic[:3, :3] = R
     extrinsic[:3, 3] = t

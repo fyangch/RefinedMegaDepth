@@ -166,6 +166,27 @@ class Pipeline:
         # pycolmap.patch_match_stereo(mvs_path)  # requires compilation with CUDA
         # pycolmap.stereo_fusion(mvs_path / "dense.ply", mvs_path)
 
+        logging.info("Running undistort_images...")
+        pycolmap.undistort_images(
+            output_path=self.paths.dense,
+            input_path=self.paths.ref_sparse,
+            image_path=self.paths.images,
+            verbose=self.args.verbose,
+        )
+
+        logging.info("Running patch_match_stereo...")
+        pycolmap.patch_match_stereo(
+            output_path=self.paths.dense,
+            verbose=self.args.verbose,
+        )
+
+        logging.info("Running stereo_fusion...")
+        pycolmap.stereo_fusion(
+            output_path=self.paths.dense / "dense.ply",
+            workspace_path=self.paths.dense,
+            verbose=self.args.verbose,
+        )
+
         end = time.time()
         logging.info(f"Time to run MVS: {datetime.timedelta(seconds=end - start)}")
 

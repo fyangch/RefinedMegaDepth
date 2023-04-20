@@ -180,16 +180,24 @@ class HlocPipeline(Pipeline):
         logging.debug(f"Loading sparse model from {self.paths.sparse}")
         logging.debug(f"Storing refined model to {self.paths.ref_sparse}")
 
-        model, outputs = refiner.run(
-            output_dir=self.paths.ref_sparse,
+        # model, outputs = refiner.run(
+        #     output_dir=self.paths.ref_sparse,
+        #     image_dir=self.paths.images,
+        #     pairs_path=self.paths.matches_retrieval,
+        #     features_path=self.paths.features,
+        #     matches_path=self.paths.matches,
+        #     reference_model_path=self.paths.sparse,
+        # )
+
+        logging.info("Running PixSfM BA...")
+        reconstruction, ba_data, feature_manager = refiner.run_ba(
+            reconstruction=self.sparse_model,
             image_dir=self.paths.images,
-            pairs_path=self.paths.matches_retrieval,
-            features_path=self.paths.features,
-            matches_path=self.paths.matches,
-            reference_model_path=self.paths.sparse,
         )
 
-        self.refined_model = model
+        reconstruction.write(str(self.paths.ref_sparse))
+
+        self.refined_model = reconstruction
 
         # TODO: explore outputs. Maybe save to metrics?
 
