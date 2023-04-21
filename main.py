@@ -45,7 +45,7 @@ def main():
     pipeline.sfm()
     pipeline.refinement()
     pipeline.mvs()  # not implemented yet
-    pipeline.cleanup()  # not implemented yet
+    pipeline.cleanup()
 
     # alterative
     # pipeline.run() # -> run all steps

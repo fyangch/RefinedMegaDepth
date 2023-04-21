@@ -1,22 +1,5 @@
 """Functions that implement the semantic filtering steps for the cleanup.."""
 import numpy as np
-from torch import nn
-
-
-# TODO: Change function signature if necessary
-def get_segmentation_map(img_path: str, model: nn.Module) -> np.ndarray:
-    """Extract the segmentation map from the image.
-
-    Args:
-        img_path (str): Path to the image.
-        model (nn.Module): Segmentation model to predict the segmentation map.
-
-    Returns:
-        np.ndarray: Predicted segmentation map.
-    """
-    # TODO: implemtent this function
-
-    raise NotImplementedError()
 
 
 # TODO: Change function signature if necessary
