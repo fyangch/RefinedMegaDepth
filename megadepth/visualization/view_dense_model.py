@@ -215,6 +215,8 @@ def render_movie(store_path: str, movie_path: str) -> None:
     cmd = "ffmpeg "
     cmd += f"-framerate 30 -i {store_path}/%04d.png "
     cmd += "-c:v libx264 -profile:v high -crf 20 -pix_fmt yuv420p "
+    size = "1920:1080" if args.quality == "high" else "960:540"
+    cmd += f"-vf scale={size} "
     cmd += f"{movie_path} -y"
     os.system(cmd)
 
@@ -236,6 +238,9 @@ if __name__ == "__main__":
     parser.add_argument("--data_path", type=str, required=True, help="Path to the data.")
     parser.add_argument("--scene", type=str, required=True, help="Name of the scene.")
     parser.add_argument("--model_name", type=str, required=True, help="Name of the model.")
+    parser.add_argument(
+        "--quality", type=str, default="low", choices=["low", "high"], help="Quality of the movie."
+    )
     args = parser.parse_args()
 
     logging.basicConfig(level=logging.INFO)
