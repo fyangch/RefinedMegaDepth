@@ -184,8 +184,14 @@ class DataPaths:
         elif args.colmap:
             return "colmap"
         elif args.matcher == Matcher.LOFTR.value:
-            return f"{args.matcher}-{args.retrieval}-{args.n_retrieval_matches}"
+            return f"{args.matcher}-{args.retrieval}-{args.n_retrieval_matches}-{args.refinements}"
         elif args.retrieval == Retrieval.EXHAUSTIVE.value:
-            return f"{args.features}-{args.matcher}-{args.retrieval}"
+            return f"{args.features}-{args.matcher}-{args.retrieval}-{args.refinements}"
         else:
-            return f"{args.features}-{args.matcher}-{args.retrieval}-{args.n_retrieval_matches}"
+            return (
+                f"{args.features}"
+                + f"-{args.matcher}"
+                + f"-{args.retrieval}"
+                + f"-{args.n_retrieval_matches}"
+                + f"-{args.refinements}"
+            )

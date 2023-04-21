@@ -17,50 +17,42 @@ import pycolmap
 from tqdm import tqdm
 
 from megadepth.utils.projections import get_camera_poses
-from megadepth.visualization.view_projections import align_models, pca
+from megadepth.visualization.view_projections import pca
 
 
-def pcd_from_colmap(
-    rec: pycolmap.Reconstruction, min_track_length: int = 6, max_reprojection_error: int = 8
-) -> o3d.geometry.PointCloud:
-    """Create an Open3D point cloud from a Colmap reconstruction.
+def pcd_from_ply(path: str) -> o3d.geometry.PointCloud:
+    """Load a point cloud from a PLY file.
 
     Args:
-        rec (pycolmap.Reconstruction): Sparse reconstruction from Colmap.
-        min_track_length (int, optional): Minimum number of images a point must be visible in to be
-        included in the point cloud. Defaults to 6.
-        max_reprojection_error (int, optional): Maximum reprojection error for a point to be
-        included in the point cloud. Defaults to 8.
+        path (str): Path to the PLY file.
 
     Returns:
         o3d.geometry.PointCloud: Open3D point cloud.
     """
-    logging.info("Creating point cloud from Colmap reconstruction")
-    logging.info(f"Min track length: {min_track_length}")
-    points = []
-    colors = []
-    for p3D in rec.points3D.values():
-        if p3D.track.length() < min_track_length:
-            continue
-        if p3D.error > max_reprojection_error:
-            continue
-        points.append(p3D.xyz)
-        colors.append(p3D.color / 255.0)
+    pcd = o3d.io.read_point_cloud(f"{path}/dense.ply")
+    model = pycolmap.Reconstruction(f"{path}/sparse")
+    align = pca(get_camera_poses(model))
+    pcd.points = o3d.utility.Vector3dVector(align(np.asarray(pcd.points)))
 
-    # Align the point cloud
-    align = pca(get_camera_poses(rec))
-    points = align(np.array(points))
+    return pcd.voxel_down_sample(voxel_size=0.01)
 
-    pcd = o3d.geometry.PointCloud()
-    pcd.points = o3d.utility.Vector3dVector(np.stack(points))
-    pcd.colors = o3d.utility.Vector3dVector(np.stack(colors))
-    print(len(points), len(rec.points3D))
-    return pcd
+
+def mesh_from_ply(path: str) -> o3d.geometry.TriangleMesh:
+    """Load a mesh from a PLY file.
+
+    Args:
+        path (str): Path to the PLY file.
+
+    Returns:
+        o3d.geometry.TriangleMesh: Open3D mesh.
+    """
+    # Load the meshed-poisson.ply file
+    return o3d.io.read_triangle_mesh(f"{path}/meshed-poisson.ply")
 
 
 @typing.no_type_check
 def render_frames(
-    rec: pycolmap.Reconstruction,
+    path: str,
     store_path: str,
     draw_cameras: bool = False,
     show_window: bool = True,
@@ -68,7 +60,7 @@ def render_frames(
     """Rotate the view of the point cloud.
 
     Args:
-        rec (pycolmap.Reconstruction): Sparse reconstruction from Colmap.
+        path (str): Path to the reconstruction.
         store_path (str): Path to store the frames of the animation.
         draw_cameras (bool, optional): Whether to draw the cameras. Defaults to True.
         show_window (bool, optional): Whether to open a window to show the animation. Defaults to
@@ -105,10 +97,6 @@ def render_frames(
         else:
             vis.close()
 
-        # update view
-        vis.poll_events()
-        vis.update_renderer()
-
         # Store the frame in a plot
         frame_every = 2
         if glb.idx % frame_every == 0:
@@ -123,12 +111,11 @@ def render_frames(
     vis = render_frames.vis
     vis.create_window(visible=show_window)
 
-    # Add the point cloud with support at least 1% of the images
-    pcd = pcd_from_colmap(rec, min_track_length=np.ceil(len(rec.images.keys()) * 0.01))
+    pcd = pcd_from_ply(path)
     vis.add_geometry(pcd)
 
-    if draw_cameras:
-        add_cameras(rec, vis)
+    # if draw_cameras:
+    #     add_cameras(rec, vis)
 
     opt = vis.get_render_option()
     opt.point_size = 1
@@ -234,24 +221,12 @@ def render_movie(store_path: str, movie_path: str) -> None:
 
 def main(args: argparse.Namespace):
     """Main function."""
-    super_path = os.path.join(args.data_path, args.scene, "sparse", args.model_name)
-    baseline_path = os.path.join(args.data_path, args.scene, "sparse", "baseline")
+    super_path = os.path.join(args.data_path, args.scene, "dense", args.model_name)
     movie_dir = os.path.join(args.data_path, args.scene, "visualizations", args.model_name)
 
-    super_model = pycolmap.Reconstruction(super_path)
-    try:
-        baseline_model = pycolmap.Reconstruction(baseline_path)
-        super_model = align_models(
-            reconstruction_anchor=baseline_model, reconstruction_align=super_model
-        )
-    except Exception:
-        logging.info("No baseline model found. Skipping alignment.")
+    render_frames(super_path, os.path.join(movie_dir, "frames"))
 
-    print(super_model.summary())
-
-    render_frames(super_model, os.path.join(movie_dir, "frames"))
-
-    render_movie(os.path.join(movie_dir, "frames"), os.path.join(movie_dir, "sparse.mp4"))
+    render_movie(os.path.join(movie_dir, "frames"), os.path.join(movie_dir, "dense.mp4"))
 
     shutil.rmtree(os.path.join(movie_dir, "frames"))
 
