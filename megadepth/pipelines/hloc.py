@@ -169,12 +169,12 @@ class HlocPipeline(Pipeline):
 
         if self.model_exists(ModelType.REFINED) and not self.args.overwrite:
             logging.info(
-                f"Reconstruction exists at {self.paths.ref_sparse}. Skipping refinement..."
+                f"Reconstruction exists at {self.paths.refined_sparse}. Skipping refinement..."
             )
             return
 
         os.makedirs(self.paths.sparse, exist_ok=True)
-        os.makedirs(self.paths.ref_sparse, exist_ok=True)
+        os.makedirs(self.paths.refined_sparse, exist_ok=True)
 
         refiner = PixSfM(conf=self.configs["refinement"])
 
@@ -184,7 +184,7 @@ class HlocPipeline(Pipeline):
         logging.debug(f"Loading features from {self.paths.features}")
         logging.debug(f"Loading matches from {self.paths.matches}")
         logging.debug(f"Loading sparse model from {self.paths.sparse}")
-        logging.debug(f"Storing refined model to {self.paths.ref_sparse}")
+        logging.debug(f"Storing refined model to {self.paths.refined_sparse}")
 
         # model, outputs = refiner.run(
         #     output_dir=self.paths.ref_sparse,
@@ -201,7 +201,7 @@ class HlocPipeline(Pipeline):
             image_dir=self.paths.images,
         )
 
-        reconstruction.write(str(self.paths.ref_sparse))
+        reconstruction.write(str(self.paths.refined_sparse))
 
         self.refined_model = reconstruction
 

@@ -152,7 +152,9 @@ class DataPaths:
         # models
         self.sparse = Path(os.path.join(self.data, args.sparse_dir, self.model_name))
         self.sparse_baseline = Path(os.path.join(self.data, args.sparse_dir, "baseline"))
-        self.ref_sparse = Path(os.path.join(self.data, args.sparse_dir, f"ref-{self.model_name}"))
+        self.refined_sparse = Path(
+            os.path.join(self.data, args.sparse_dir, self.model_name, "refined")
+        )
         self.db = Path(os.path.join(self.sparse, "database.db"))
         self.dense = Path(os.path.join(self.data, args.dense_dir, self.model_name))
         self.baseline_model = Path(os.path.join(self.data, args.sparse_dir, "baseline"))

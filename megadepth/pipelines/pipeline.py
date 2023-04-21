@@ -60,7 +60,7 @@ class Pipeline:
                 return False
         elif model == ModelType.REFINED:
             try:
-                self.refined_model = pycolmap.Reconstruction(self.paths.ref_sparse)
+                self.refined_model = pycolmap.Reconstruction(self.paths.refined_sparse)
                 return True
             except Exception:
                 return False
@@ -167,15 +167,10 @@ class Pipeline:
 
         # TODO: decide if this can be done in the abstract class
 
-        # TODO: implement MVS
-        # pycolmap.undistort_images(mvs_path, output_path, image_dir)
-        # pycolmap.patch_match_stereo(mvs_path)  # requires compilation with CUDA
-        # pycolmap.stereo_fusion(mvs_path / "dense.ply", mvs_path)
-
         logging.info("Running undistort_images...")
         pycolmap.undistort_images(
             output_path=self.paths.dense,
-            input_path=self.paths.ref_sparse,
+            input_path=self.paths.refined_sparse,
             image_path=self.paths.images,
             verbose=self.args.verbose,
         )

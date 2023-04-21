@@ -34,7 +34,7 @@ def collect_metrics(
         reconstruction = pycolmap.Reconstruction(paths.sparse)
         metrics, overlap = collect_sparse(reconstruction)
     elif model_type == ModelType.REFINED:
-        reconstruction = pycolmap.Reconstruction(paths.ref_sparse)
+        reconstruction = pycolmap.Reconstruction(paths.refined_sparse)
         metrics, overlap = collect_sparse(reconstruction)
     elif model_type == ModelType.DENSE:
         reconstruction = pycolmap.Reconstruction(os.path.join(paths.dense, "sparse"))
