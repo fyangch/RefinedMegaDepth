@@ -6,15 +6,12 @@ import logging
 import os
 from pathlib import Path
 
+import pixsfm
 from hloc import extract_features, match_dense, match_features
+from omegaconf import OmegaConf
 
 from megadepth.utils.args import setup_args
 from megadepth.utils.constants import Features, Matcher, Retrieval
-
-# from pixsfm.base import interpolation_default_conf
-# from pixsfm.bundle_adjustment import BundleAdjuster
-# from pixsfm.features.extractor import FeatureExtractor
-# from pixsfm.keypoint_adjustment import KeypointAdjuster
 
 
 def setup() -> argparse.Namespace:
@@ -54,6 +51,9 @@ def setup_logger(args: argparse.Namespace) -> None:
         filename=log_file,
     )
 
+    logging.getLogger("PIL.TiffImagePlugin").setLevel(logging.ERROR)
+    logging.getLogger("PIL.PngImagePlugin").setLevel(logging.ERROR)
+
 
 def get_configs(args: argparse.Namespace) -> dict:
     """Return a dictionary of configuration parameters.
@@ -85,24 +85,18 @@ def get_configs(args: argparse.Namespace) -> dict:
         matcher_conf = match_features.confs[args.matcher]
 
     # refinement config
-    # refinement_conf = {
-    #     "dense_features": {**FeatureExtractor.default_conf},
-    #     "interpolation": interpolation_default_conf,
-    #     "KA": {
-    #         **KeypointAdjuster.default_conf,
-    #         "interpolation": "${..interpolation}",
-    #     },
-    #     "BA": {
-    #         **BundleAdjuster.default_conf,
-    #         "interpolation": "${..interpolation}",
-    #     },
-    # }
+
+    # set cache path
+    if args.low_memory:
+        refinement_conf = OmegaConf.load(pixsfm.configs.parse_config_path("low_memory"))
+    else:
+        refinement_conf = OmegaConf.load(pixsfm.configs.parse_config_path("default"))
 
     return {
         "retrieval": retrieval_conf,
         "feature": feature_config,
         "matcher": matcher_conf,
-        # "refinement": refinement_conf,
+        "refinement": refinement_conf,
     }
 
 
@@ -150,7 +144,9 @@ class DataPaths:
         # models
         self.sparse = Path(os.path.join(self.data, args.sparse_dir, self.model_name))
         self.sparse_baseline = Path(os.path.join(self.data, args.sparse_dir, "baseline"))
-        self.ref_sparse = Path(os.path.join(self.data, args.sparse_dir, f"ref-{self.model_name}"))
+        self.refined_sparse = Path(
+            os.path.join(self.data, args.sparse_dir, self.model_name, "refined")
+        )
         self.db = Path(os.path.join(self.sparse, "database.db"))
         self.dense = Path(os.path.join(self.data, args.dense_dir, self.model_name))
         self.baseline_model = Path(os.path.join(self.data, args.sparse_dir, "baseline"))
@@ -161,6 +157,18 @@ class DataPaths:
         self.visualizations = Path(
             os.path.join(self.data, args.visualizations_dir, self.model_name)
         )
+
+        # cache
+        self.cache = None
+        if args.low_memory:
+            cache_dir = os.environ.get("TMPDIR")
+            if cache_dir is None:
+                raise ValueError(
+                    "TMPDIR environment variable not set. "
+                    + "Set it using export TMPDIR=/path/to/tmpdir"
+                )
+
+            self.cache = Path(cache_dir)
 
         logging.debug("Data paths:")
         for path, val in vars(self).items():
@@ -180,8 +188,14 @@ class DataPaths:
         elif args.colmap:
             return "colmap"
         elif args.matcher == Matcher.LOFTR.value:
-            return f"{args.matcher}-{args.retrieval}-{args.n_retrieval_matches}"
+            return f"{args.matcher}-{args.retrieval}-{args.n_retrieval_matches}-{args.refinements}"
         elif args.retrieval == Retrieval.EXHAUSTIVE.value:
-            return f"{args.features}-{args.matcher}-{args.retrieval}"
+            return f"{args.features}-{args.matcher}-{args.retrieval}-{args.refinements}"
         else:
-            return f"{args.features}-{args.matcher}-{args.retrieval}-{args.n_retrieval_matches}"
+            return (
+                f"{args.features}"
+                + f"-{args.matcher}"
+                + f"-{args.retrieval}"
+                + f"-{args.n_retrieval_matches}"
+                + f"-{args.refinements}"
+            )

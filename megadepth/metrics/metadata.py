@@ -33,6 +33,9 @@ def collect_metrics(
     if model_type == ModelType.SPARSE:
         reconstruction = pycolmap.Reconstruction(paths.sparse)
         metrics, overlap = collect_sparse(reconstruction)
+    elif model_type == ModelType.REFINED:
+        reconstruction = pycolmap.Reconstruction(paths.refined_sparse)
+        metrics, overlap = collect_sparse(reconstruction)
     elif model_type == ModelType.DENSE:
         reconstruction = pycolmap.Reconstruction(os.path.join(paths.dense, "sparse"))
         depth_map_path = os.path.join(paths.dense, "stereo", "depth_maps")
@@ -69,7 +72,9 @@ def collect_metrics(
     metrics["features"] = args.features
     metrics["matcher"] = args.matcher
 
-    logging.debug(metrics)
+    logging.debug(f"Metrics for {model_type.value} model:")
+    for k, v in metrics.items():
+        logging.debug(f"\t{k}: {v}")
 
     os.makedirs(paths.metrics, exist_ok=True)
 
@@ -120,8 +125,14 @@ def collect_dense(
         A dictionary containing the metrics and a numpy array containing the overlap scores.
     """
     metrics: Dict[str, Any] = {
-        # TODO
+        "n_reg_images": reconstruction.num_reg_images(),
+        "mean_reprojection_error": reconstruction.compute_mean_reprojection_error(),
+        "n_observations": reconstruction.compute_num_observations(),
+        "mean_obs_per_reg_image": reconstruction.compute_mean_observations_per_reg_image(),
+        "mean_track_length": reconstruction.compute_mean_track_length(),
     }
+    # TODO: add metrics if we loose some images during dense reconstruction
+
     overlap = dense_overlap(reconstruction, depth_map_path)
 
     return metrics, overlap

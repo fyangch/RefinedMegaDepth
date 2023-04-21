@@ -17,7 +17,6 @@ import pycolmap
 from tqdm import tqdm
 
 from megadepth.utils.projections import get_camera_poses
-from megadepth.utils.setup import DataPaths
 from megadepth.visualization.view_projections import align_models, pca
 
 
@@ -36,6 +35,8 @@ def pcd_from_colmap(
     Returns:
         o3d.geometry.PointCloud: Open3D point cloud.
     """
+    logging.info("Creating point cloud from Colmap reconstruction")
+    logging.info(f"Min track length: {min_track_length}")
     points = []
     colors = []
     for p3D in rec.points3D.values():
@@ -62,7 +63,7 @@ def render_frames(
     rec: pycolmap.Reconstruction,
     store_path: str,
     draw_cameras: bool = False,
-    show_window: bool = False,
+    show_window: bool = True,
 ) -> None:
     """Rotate the view of the point cloud.
 
@@ -104,6 +105,10 @@ def render_frames(
         else:
             vis.close()
 
+        # update view
+        vis.poll_events()
+        vis.update_renderer()
+
         # Store the frame in a plot
         frame_every = 2
         if glb.idx % frame_every == 0:
@@ -118,7 +123,8 @@ def render_frames(
     vis = render_frames.vis
     vis.create_window(visible=show_window)
 
-    pcd = pcd_from_colmap(rec)
+    # Add the point cloud with support at least 1% of the images
+    pcd = pcd_from_colmap(rec, min_track_length=np.ceil(len(rec.images.keys()) * 0.01))
     vis.add_geometry(pcd)
 
     if draw_cameras:
@@ -140,12 +146,16 @@ def add_cameras(rec: pycolmap.Reconstruction, vis: o3d.visualization.Visualizer)
         rec (pycolmap.Reconstruction): Sparse reconstruction from Colmap.
         vis (o3d.visualization.Visualizer): Open3D visualizer.
     """
-    camera_lines = {}
-    for camera in rec.cameras.values():
-        camera_lines[camera.camera_id] = o3d.geometry.LineSet.create_camera_visualization(
-            camera.width, camera.height, camera.calibration_matrix(), np.eye(4), scale=0.1
+    camera_lines = {
+        camera.camera_id: o3d.geometry.LineSet.create_camera_visualization(
+            camera.width,
+            camera.height,
+            camera.calibration_matrix(),
+            np.eye(4),
+            scale=0.1,
         )
-
+        for camera in rec.cameras.values()
+    }
     # Draw the frustum for each image
     for image in rec.images.values():
         T = np.eye(4)
@@ -179,17 +189,17 @@ def get_updated_extrinsics(idx: int) -> np.ndarray:
     )
 
     angle = (idx / 600) * 2 * np.pi
-    R_z = np.array(
+    R_y = np.array(
         [
-            [np.cos(angle), -np.sin(angle), 0],
-            [np.sin(angle), np.cos(angle), 0],
-            [0, 0, 1],
+            [np.cos(angle), 0, np.sin(angle)],
+            [0, 1, 0],
+            [-np.sin(angle), 0, np.cos(angle)],
         ],
         dtype=np.float64,
     )
 
     # rotate around x
-    angle = 120
+    angle = 30
     angle = angle / 180 * np.pi
     R_x = np.array(
         [
@@ -200,7 +210,7 @@ def get_updated_extrinsics(idx: int) -> np.ndarray:
         dtype=np.float64,
     )
 
-    R = R_x @ R_z
+    R = R_x @ R_y @ R
 
     extrinsic[:3, :3] = R
     extrinsic[:3, 3] = t
@@ -220,25 +230,6 @@ def render_movie(store_path: str, movie_path: str) -> None:
     cmd += "-c:v libx264 -profile:v high -crf 20 -pix_fmt yuv420p "
     cmd += f"{movie_path} -y"
     os.system(cmd)
-
-
-def create_movie(paths: DataPaths) -> None:
-    """Make a movie from the frames of the animation.
-
-    Args:
-        paths (DataPaths): Paths to the data.
-    """
-    model = pycolmap.Reconstruction(paths.sparse)
-
-    logging.debug("Rendering frames.")
-    render_frames(model, os.path.join(paths.visualizations, "frames"))
-    logging.debug("Rendering movie.")
-    render_movie(
-        os.path.join(paths.visualizations, "frames"),
-        os.path.join(paths.visualizations, "sparse.mp4"),
-    )
-    logging.debug("Removing frames.")
-    shutil.rmtree(os.path.join(paths.visualizations, "frames"))
 
 
 def main(args: argparse.Namespace):

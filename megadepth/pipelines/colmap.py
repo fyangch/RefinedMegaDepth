@@ -85,5 +85,37 @@ class ColmapPipeline(Pipeline):
 
     def refinement(self) -> None:
         """Run refinement."""
-        # TODO: implement pixsfm.refine_colmap
         pass
+
+    def mvs(self) -> None:
+        """Run Multi-View Stereo."""
+        self.log_step("Running Multi-View Stereo...")
+        start = time.time()
+
+        os.makedirs(self.paths.dense, exist_ok=True)
+
+        # TODO: decide if this can be done in the abstract class
+
+        logging.info("Running undistort_images...")
+        pycolmap.undistort_images(
+            output_path=self.paths.dense,
+            input_path=self.paths.sparse,
+            image_path=self.paths.images,
+            verbose=self.args.verbose,
+        )
+
+        logging.info("Running patch_match_stereo...")
+        pycolmap.patch_match_stereo(
+            workspace_path=self.paths.dense,
+            verbose=self.args.verbose,
+        )
+
+        logging.info("Running stereo_fusion...")
+        pycolmap.stereo_fusion(
+            output_path=self.paths.dense / "dense.ply",
+            workspace_path=self.paths.dense,
+            verbose=self.args.verbose,
+        )
+
+        end = time.time()
+        logging.info(f"Time to run MVS: {datetime.timedelta(seconds=end - start)}")
