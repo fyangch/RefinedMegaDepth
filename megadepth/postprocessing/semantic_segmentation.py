@@ -1,43 +1,61 @@
 """Functions that implement the semantic segmentation steps for the cleanup.."""
-from typing import Tuple
-
+import numpy as np
 import torch
+from mit_semseg.models import ModelBuilder, SegmentationModule
 from PIL import Image
-from torch import nn
-from transformers import BeitFeatureExtractor, BeitForSemanticSegmentation
+from torchvision import transforms
+
+pil_to_tensor = transforms.Compose(
+    [
+        transforms.ToTensor(),
+        transforms.Normalize(
+            mean=[0.485, 0.456, 0.406],
+            std=[0.229, 0.224, 0.225],
+        ),
+    ]
+)
 
 
-def get_segmentation_model() -> Tuple[BeitFeatureExtractor, BeitForSemanticSegmentation]:
-    """Return the BEiT segmentation model (pre-trained on MIT ADE20K).
+def get_segmentation_model() -> SegmentationModule:
+    """Return the HRNetV2 segmentation model (pre-trained on MIT ADE20K).
 
-    More information about the model:
-        - https://huggingface.co/microsoft/beit-base-finetuned-ade-640-640
-        - https://github.com/microsoft/unilm/tree/master/beit
+    More information: https://github.com/CSAILVision/semantic-segmentation-pytorch
 
     Returns:
-        The feature extractor and segmentation model.
+        SegmentationModule: The HRNetV2 segmentation model.
     """
-    feature_extractor = BeitFeatureExtractor.from_pretrained(
-        "microsoft/beit-base-finetuned-ade-640-640"
-    )
-    model = BeitForSemanticSegmentation.from_pretrained("microsoft/beit-base-finetuned-ade-640-640")
+    encoder = ModelBuilder.build_encoder("hrnetv2", fc_dim=720)
+    decoder = ModelBuilder.build_decoder("c1", fc_dim=720, use_softmax=True)
 
-    return feature_extractor, model
+    crit = torch.nn.NLLLoss(ignore_index=-1)
+    model = SegmentationModule(encoder, decoder, crit)
+    model.eval()
+    if torch.cuda.is_available():
+        model.cuda()
+
+    return model
 
 
-def get_segmentation_map(
-    image: Image, feature_extractor: nn.Module, model: nn.Module
-) -> torch.Tensor:
+def get_segmentation_map(image: Image, model: SegmentationModule) -> np.ndarray:
     """Extract the segmentation map from the image.
 
     Args:
         image (Image): Undistorted image.
-        feature_extractor (nn.Module): BEiT feature extractor.
-        model (nn.Module): BEiT segmentation model.
+        model (SegmentationModule): Segmentation model.
 
     Returns:
-        torch.Tensor: Predicted segmentation map.
+        np.ndarray: Predicted segmentation map with shape (1, height, width).
     """
-    # TODO: implemtent this function
+    img_data = pil_to_tensor(image)
+    output_size = img_data.shape[1:]
 
-    raise NotImplementedError()
+    if torch.cuda.is_available():
+        batch = {"img_data": img_data[None].cuda()}
+    else:
+        batch = {"img_data": img_data[None]}
+
+    with torch.no_grad():
+        scores = model(batch, segSize=output_size)
+
+    _, pred = torch.max(scores, dim=1)
+    return pred.cpu()[0].numpy()

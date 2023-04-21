@@ -2,4 +2,4 @@ pytorch
 numpy
 matplotlib
 pandas
-transformers
+git+https://github.com/CSAILVision/semantic-segmentation-pytorch.git@master

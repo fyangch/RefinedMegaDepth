@@ -31,13 +31,13 @@ def refine_depth_maps(
         depth_map_dir (Path): Path to the directory that contains the raw depth maps.
         output_dir (Path): Path to the directory where the refined depth maps should be saved.
     """
-    feature_extractor, model = get_segmentation_model()
+    model = get_segmentation_model()
 
     for image_fn in tqdm(os.listdir(image_dir)):
-        image = Image.open(image_dir / image_fn)
+        image = Image.open(image_dir / image_fn).convert("RGB")
         depth_map = load_depth_map(os.path.join(depth_map_dir, f"{image_fn}.geometric.bin"))
 
-        segmentation_map = get_segmentation_map(image, feature_extractor, model)
+        segmentation_map = get_segmentation_map(image, model)
 
         depth_map = filter_unstable_depths(depth_map)
         depth_map = apply_semantic_filtering(depth_map, segmentation_map)
