@@ -159,6 +159,7 @@ class DataPaths:
         )
 
         # cache
+        self.cache = None
         if args.low_memory:
             cache_dir = os.environ.get("TMPDIR")
             if cache_dir is None:
