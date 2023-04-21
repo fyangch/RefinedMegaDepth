@@ -32,7 +32,13 @@ def pca(data: np.ndarray) -> Callable[[np.ndarray], np.ndarray]:
         sign = np.sign(np.ones((1, 3)) @ sorted_eigenvectors)
         det_sign = np.linalg.det(sorted_eigenvectors)
         sorted_eigenvectors = sorted_eigenvectors * sign * det_sign
-    return lambda x: (x - mean) / scale @ sorted_eigenvectors
+
+    return (
+        lambda x: (x - mean)
+        / scale
+        @ sorted_eigenvectors
+        @ np.array([[0, -1, 0], [0, 0, -1], [1, 0, 0]]).T  # inverse
+    )
 
 
 def plot_view_projection(
@@ -51,8 +57,9 @@ def plot_view_projection(
     view_names = ["Top View", "Front View", "Right View"]
     id1, id2 = [(0, 1), (0, 2), (1, 2)][view]
     for data in Data:
-        labels = ["X", "Y", "Z"]
-        plt.scatter(data[:, id1], data[:, id2], s=s, alpha=alpha, *args, **kwargs)
+        labels = ["X", "Z", "Y"]
+        d = data @ np.array([[0, -1, 0], [0, 0, -1], [1, 0, 0]])
+        plt.scatter(d[:, id1], d[:, id2], s=s, alpha=alpha, *args, **kwargs)
         plt.title(view_names[view])
     plt.axis("scaled")
     plt.xlim(-limit, limit)
@@ -76,7 +83,7 @@ def create_view_projection_figure(
         view (Optional[int], optional): Int to select from ["Top View", "Front View", "Right View"]
         path (Optional[str], optional): Filepath to store the plot. Defaults to None.
     """
-    fig = plt.figure()
+    fig = plt.figure(figsize=(15, 15))
     plt.tight_layout()
     if view is None:
         for i in range(3):

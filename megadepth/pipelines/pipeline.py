@@ -11,7 +11,6 @@ import pycolmap
 from hloc.reconstruction import create_empty_db, get_image_ids, import_images
 
 from megadepth.utils.constants import ModelType
-from megadepth.utils.read_write_model import write_model
 from megadepth.utils.setup import DataPaths, get_configs
 from megadepth.visualization.view_projections import align_models
 
@@ -100,12 +99,7 @@ class Pipeline:
         )
 
         if overwrite:
-            write_model(
-                cameras=self.sparse_model.cameras,
-                images=self.sparse_model.images,
-                points3D=self.sparse_model.points3D,
-                path=str(self.paths.sparse),
-            )
+            self.sparse_model.write_binary(str(self.paths.sparse))
 
         return self.sparse_model
 

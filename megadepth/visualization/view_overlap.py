@@ -15,13 +15,14 @@ def show_matrix(matrix: np.ndarray, path: Optional[str] = None):
         matrix: NxN np.ndarray
         path: filepath to store the plot
     """
-    fig = plt.figure()
+    fig = plt.figure(figsize=(10, 10))
     plt.tight_layout()
     plt.imshow(matrix, interpolation="nearest")
     if path is None:
         plt.show()
     else:
-        fig.savefig(path, dpi=900, bbox_inches="tight")
+        fig.savefig(path, dpi=600, bbox_inches="tight")
+    plt.close(fig)
 
 
 def vis_overlap(matrix, poses, points=np.zeros((0, 3)), path=None, *args, **kwargs):
@@ -36,7 +37,7 @@ def vis_overlap(matrix, poses, points=np.zeros((0, 3)), path=None, *args, **kwar
         points: (optional)
         path: filepath to store the plot
     """
-    fig = plt.figure()
+    fig = plt.figure(figsize=(10, 10))
     plt.tight_layout()
 
     # Calculate coordinates and weights of all pairs of cameras
@@ -65,5 +66,5 @@ def vis_overlap(matrix, poses, points=np.zeros((0, 3)), path=None, *args, **kwar
     if path is None:
         plt.show()
     else:
-        fig.savefig(path, dpi=900, bbox_inches="tight")
+        fig.savefig(path, dpi=600, bbox_inches="tight")
     plt.close(fig)
