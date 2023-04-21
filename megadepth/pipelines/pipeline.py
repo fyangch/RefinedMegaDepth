@@ -98,8 +98,8 @@ class Pipeline:
             reconstruction_anchor=baseline_model, reconstruction_align=self.sparse_model
         )
 
-        if overwrite:
-            self.sparse_model.write_binary(str(self.paths.sparse))
+        self.sparse_model.write_binary(str(self.paths.sparse))
+        logging.info("Aligned sparse model to baseline model.")
 
         return self.sparse_model
 
