@@ -6,11 +6,9 @@ import logging
 import os
 from pathlib import Path
 
+import pixsfm
 from hloc import extract_features, match_dense, match_features
-from pixsfm.base import interpolation_default_conf
-from pixsfm.bundle_adjustment import BundleAdjuster
-from pixsfm.features.extractor import FeatureExtractor
-from pixsfm.keypoint_adjustment import KeypointAdjuster
+from omegaconf import OmegaConf
 
 from megadepth.utils.args import setup_args
 from megadepth.utils.constants import Features, Matcher, Retrieval
@@ -87,18 +85,12 @@ def get_configs(args: argparse.Namespace) -> dict:
         matcher_conf = match_features.confs[args.matcher]
 
     # refinement config
-    refinement_conf = {
-        "dense_features": {**FeatureExtractor.default_conf},
-        "interpolation": interpolation_default_conf,
-        "KA": {
-            **KeypointAdjuster.default_conf,
-            "interpolation": "${..interpolation}",
-        },
-        "BA": {
-            **BundleAdjuster.default_conf,
-            "interpolation": "${..interpolation}",
-        },
-    }
+
+    # set cache path
+    if args.low_memory:
+        refinement_conf = OmegaConf.load(pixsfm.configs.parse_config_path("low_memory"))
+    else:
+        refinement_conf = OmegaConf.load(pixsfm.configs.parse_config_path("default"))
 
     return {
         "retrieval": retrieval_conf,
@@ -165,6 +157,17 @@ class DataPaths:
         self.visualizations = Path(
             os.path.join(self.data, args.visualizations_dir, self.model_name)
         )
+
+        # cache
+        if args.low_memory:
+            cache_dir = os.environ.get("TMPDIR")
+            if cache_dir is None:
+                raise ValueError(
+                    "TMPDIR environment variable not set. "
+                    + "Set it using export TMPDIR=/path/to/tmpdir"
+                )
+
+            self.cache = Path(cache_dir)
 
         logging.debug("Data paths:")
         for path, val in vars(self).items():

@@ -136,6 +136,12 @@ def setup_args() -> argparse.Namespace:
     )
 
     parser.add_argument(
+        "--low_memory",
+        action="store_true",
+        help="Use low memory mode in PixSfM. Will write data to path specified by $TMPDIR.",
+    )
+
+    parser.add_argument(
         "--overwrite",
         action="store_true",
         help="Overwrite the existing results.",

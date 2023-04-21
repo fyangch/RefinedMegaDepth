@@ -42,6 +42,7 @@ class PixSfMPipeline(HlocPipeline):
             pairs_path=self.paths.matches_retrieval,
             features_path=self.paths.features,
             matches_path=self.paths.matches,
+            cache_path=self.paths.cache,
             verbose=self.args.verbose,
         )
 
