@@ -44,7 +44,7 @@ def get_segmentation_map(image: Image, model: SegmentationModule) -> np.ndarray:
         model (SegmentationModule): Segmentation model.
 
     Returns:
-        np.ndarray: Predicted segmentation map with shape (1, height, width).
+        np.ndarray: Predicted segmentation map with shape (height, width).
     """
     img_data = pil_to_tensor(image)
     output_size = img_data.shape[1:]
