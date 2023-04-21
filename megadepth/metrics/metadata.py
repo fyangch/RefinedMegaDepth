@@ -125,8 +125,14 @@ def collect_dense(
         A dictionary containing the metrics and a numpy array containing the overlap scores.
     """
     metrics: Dict[str, Any] = {
-        # TODO
+        "n_reg_images": reconstruction.num_reg_images(),
+        "mean_reprojection_error": reconstruction.compute_mean_reprojection_error(),
+        "n_observations": reconstruction.compute_num_observations(),
+        "mean_obs_per_reg_image": reconstruction.compute_mean_observations_per_reg_image(),
+        "mean_track_length": reconstruction.compute_mean_track_length(),
     }
+    # TODO: add metrics if we loose some images during dense reconstruction
+
     overlap = dense_overlap(reconstruction, depth_map_path)
 
     return metrics, overlap

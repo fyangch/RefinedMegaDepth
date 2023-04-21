@@ -26,6 +26,7 @@ def main():
         pipeline.align_with_baseline()
         collect_metrics(paths, args, ModelType.SPARSE)
         collect_metrics(paths, args, ModelType.REFINED)
+        collect_metrics(paths, args, ModelType.DENSE)
         return
 
     # run pipeline
@@ -43,6 +44,7 @@ def main():
 
     collect_metrics(paths, args, model_type=ModelType.SPARSE)
     collect_metrics(paths, args, model_type=ModelType.REFINED)
+    collect_metrics(paths, args, model_type=ModelType.DENSE)
 
     end = time.time()
     logging.info(f"Total time: {datetime.timedelta(seconds=end - start)}")
