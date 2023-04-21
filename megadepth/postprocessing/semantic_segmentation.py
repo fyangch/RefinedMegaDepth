@@ -24,8 +24,13 @@ def get_segmentation_model() -> SegmentationModule:
     Returns:
         SegmentationModule: The HRNetV2 segmentation model.
     """
-    encoder = ModelBuilder.build_encoder("hrnetv2", fc_dim=720)
-    decoder = ModelBuilder.build_decoder("c1", fc_dim=720, use_softmax=True)
+    # TODO: update the weights path
+    encoder = ModelBuilder.build_encoder(
+        "hrnetv2", fc_dim=720, weights="./pretrained/hrnetv2/encoder_epoch_30.pth"
+    )
+    decoder = ModelBuilder.build_decoder(
+        "c1", fc_dim=720, use_softmax=True, weights="./pretrained/hrnetv2/decoder_epoch_30.pth"
+    )
 
     crit = torch.nn.NLLLoss(ignore_index=-1)
     model = SegmentationModule(encoder, decoder, crit)
