@@ -77,6 +77,10 @@ def apply_semantic_filtering(
     """
     # TODO: Supplementary material, Algorithm 1, line 12-17
 
+    # foreground_mask = get_mask(segmentation_map, "foreground")
+    # background_mask = get_mask(segmentation_map, "background")
+    # sky_mask = get_mask(segmentation_map, "sky")
+
     raise NotImplementedError()
 
 
