@@ -1,5 +1,6 @@
 """Several helper functions for IO."""
 import argparse
+import glob
 import os
 from pathlib import Path
 from typing import List
@@ -32,6 +33,15 @@ def save_image(image: np.ndarray, image_path: str) -> None:
     """
     img = Image.fromarray(image)
     img.save(image_path)
+
+
+def make_gif(store_path: str, movie_path: str):
+    """Crashes when used with many more frames than 50."""
+    frames = [Image.open(image) for image in sorted(glob.glob(f"{store_path}/*.png"))]
+    frame_one = frames[0]
+    frame_one.save(
+        movie_path, format="GIF", append_images=frames, save_all=True, duration=10, loop=0
+    )
 
 
 def load_depth_map(path: str) -> np.array:
