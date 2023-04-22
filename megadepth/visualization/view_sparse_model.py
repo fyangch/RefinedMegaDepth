@@ -5,7 +5,6 @@ Example:
 """
 
 import argparse
-import glob
 import logging
 import os
 import shutil
@@ -15,11 +14,9 @@ from copy import deepcopy
 import numpy as np
 import open3d as o3d
 import pycolmap
-from PIL import Image
 from tqdm import tqdm
 
 from megadepth.utils.projections import get_camera_poses
-from megadepth.utils.setup import DataPaths
 from megadepth.visualization.view_projections import align_models, pca_matrix
 
 
@@ -62,6 +59,8 @@ def pcd_from_colmap(
     Returns:
         o3d.geometry.PointCloud: Open3D point cloud.
     """
+    logging.info("Creating point cloud from Colmap reconstruction")
+    logging.info(f"Min track length: {min_track_length}")
     points = []
     colors = []
     for p3D in rec.points3D.values():
@@ -149,6 +148,10 @@ def render_frames(
             vis.close()
         glb.idx += 1
 
+        # update view
+        vis.poll_events()
+        vis.update_renderer()
+
         # Store the frame in a plot
         filename = os.path.join(glb.store_path, f"{glb.idx:04d}.png")
         vis.capture_screen_image(filename, do_render=True)
@@ -161,7 +164,8 @@ def render_frames(
     vis = render_frames.vis
     vis.create_window(visible=show_window)
 
-    pcd = pcd_from_colmap(rec)
+    # Add the point cloud with support at least 1% of the images
+    pcd = pcd_from_colmap(rec, min_track_length=np.ceil(len(rec.images.keys()) * 0.01))
     vis.add_geometry(pcd)
 
     if draw_cameras:
@@ -183,12 +187,16 @@ def add_cameras(rec: pycolmap.Reconstruction, vis: o3d.visualization.Visualizer)
         rec (pycolmap.Reconstruction): Sparse reconstruction from Colmap.
         vis (o3d.visualization.Visualizer): Open3D visualizer.
     """
-    camera_lines = {}
-    for camera in rec.cameras.values():
-        camera_lines[camera.camera_id] = o3d.geometry.LineSet.create_camera_visualization(
-            camera.width, camera.height, camera.calibration_matrix(), np.eye(4), scale=0.1
+    camera_lines = {
+        camera.camera_id: o3d.geometry.LineSet.create_camera_visualization(
+            camera.width,
+            camera.height,
+            camera.calibration_matrix(),
+            np.eye(4),
+            scale=0.1,
         )
-
+        for camera in rec.cameras.values()
+    }
     # Draw the frustum for each image
     for image in rec.images.values():
         T = np.eye(4)
@@ -252,34 +260,6 @@ def render_movie(store_path: str, movie_path: str) -> None:
     cmd += "-c:v libx264 -profile:v high -crf 20 -pix_fmt yuv420p "
     cmd += f"{movie_path} -y"
     os.system(cmd)
-
-
-def create_movie(paths: DataPaths) -> None:
-    """Make a movie from the frames of the animation.
-
-    Args:
-        paths (DataPaths): Paths to the data.
-    """
-    model = pycolmap.Reconstruction(paths.sparse)
-
-    logging.debug("Rendering frames.")
-    render_frames(model, os.path.join(paths.visualizations, "frames"))
-    logging.debug("Rendering movie.")
-    render_movie(
-        os.path.join(paths.visualizations, "frames"),
-        os.path.join(paths.visualizations, "sparse.mp4"),
-    )
-    logging.debug("Removing frames.")
-    shutil.rmtree(os.path.join(paths.visualizations, "frames"))
-
-
-def make_gif(store_path: str, movie_path: str):
-    """Crashes when used with many more frames than 50."""
-    frames = [Image.open(image) for image in sorted(glob.glob(f"{store_path}/*.png"))]
-    frame_one = frames[0]
-    frame_one.save(
-        movie_path, format="GIF", append_images=frames, save_all=True, duration=10, loop=0
-    )
 
 
 def main(args: argparse.Namespace):
