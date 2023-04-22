@@ -5,6 +5,7 @@ Example:
 """
 
 import argparse
+import glob
 import logging
 import os
 import shutil
@@ -14,11 +15,36 @@ from copy import deepcopy
 import numpy as np
 import open3d as o3d
 import pycolmap
+from PIL import Image
 from tqdm import tqdm
 
 from megadepth.utils.projections import get_camera_poses
 from megadepth.utils.setup import DataPaths
-from megadepth.visualization.view_projections import align_models, pca
+from megadepth.visualization.view_projections import align_models, pca_matrix
+
+
+def compute_pca_on_camera_poses(rec: pycolmap.Reconstruction):
+    """Returns pca basis and center."""
+    camera_poses = get_camera_poses(rec)
+    return pca_matrix(camera_poses)
+
+
+def compute_pca_on_points(rec: pycolmap.Reconstruction):
+    """Returns pca basis and center."""
+    points = np.array([p.xyz for p in rec.points3D.values()])
+    return pca_matrix(points)
+
+
+def compute_scale_on_camera_poses(rec: pycolmap.Reconstruction):
+    """Returns std of camera poses."""
+    camera_poses = get_camera_poses(rec)
+    return camera_poses.std()
+
+
+def compute_scale_on_points(rec: pycolmap.Reconstruction):
+    """Returns std of points."""
+    points = np.array([p.xyz for p in rec.points3D.values()])
+    return points.std()
 
 
 def pcd_from_colmap(
@@ -46,9 +72,7 @@ def pcd_from_colmap(
         points.append(p3D.xyz)
         colors.append(p3D.color / 255.0)
 
-    # Align the point cloud
-    align = pca(get_camera_poses(rec))
-    points = align(np.array(points))
+    points = np.array(points)
 
     pcd = o3d.geometry.PointCloud()
     pcd.points = o3d.utility.Vector3dVector(np.stack(points))
@@ -63,6 +87,8 @@ def render_frames(
     store_path: str,
     draw_cameras: bool = False,
     show_window: bool = False,
+    pca_transform=None,
+    scale=None,
 ) -> None:
     """Rotate the view of the point cloud.
 
@@ -72,11 +98,30 @@ def render_frames(
         draw_cameras (bool, optional): Whether to draw the cameras. Defaults to True.
         show_window (bool, optional): Whether to open a window to show the animation. Defaults to
         False.
+        pca_transform: pass pca matrix from basemodel to be used for alignment
+        scale: pass scale of animation from basemodel
     """
     render_frames.idx = 0
     render_frames.vis = o3d.visualization.Visualizer()
     render_frames.store_path = store_path
-    render_frames.pbar = tqdm(total=600)
+    render_frames.num_frames = 150
+    render_frames.pbar = tqdm(total=render_frames.num_frames)
+
+    render_frames.phi = lambda x: 120
+    render_frames.t = lambda x: 5  # 3.5 + 1.5 * np.cos(x * 2 * np.pi)
+    render_frames.theta = lambda x: 2 * np.pi * x
+    # render_frames.theta = lambda x: np.deg2rad(
+    #     np.cos(2 * np.pi * x) * 45
+    # )  # go back and forth 45 deg
+    if pca_transform is None:
+        render_frames.pca_transform = compute_pca_on_camera_poses(rec)
+    else:
+        render_frames.pca_transform = pca_transform
+
+    if scale is None:
+        render_frames.scale = compute_scale_on_points(rec)
+    else:
+        render_frames.scale = scale
 
     if not os.path.exists(store_path):
         os.makedirs(store_path)
@@ -94,21 +139,19 @@ def render_frames(
 
         # Stop rotating after 360 degrees
         glb = render_frames
-        glb.idx += 1
 
-        if glb.idx < 600:
+        if glb.idx < glb.num_frames:
             camera = ctr.convert_to_pinhole_camera_parameters()
-            camera.extrinsic = get_updated_extrinsics(glb.idx)
+            camera.extrinsic = get_updated_extrinsics(glb)
             ctr.convert_from_pinhole_camera_parameters(camera)
 
         else:
             vis.close()
+        glb.idx += 1
 
         # Store the frame in a plot
-        frame_every = 2
-        if glb.idx % frame_every == 0:
-            filename = os.path.join(glb.store_path, f"{glb.idx//frame_every:04d}.png")
-            vis.capture_screen_image(filename, do_render=True)
+        filename = os.path.join(glb.store_path, f"{glb.idx:04d}.png")
+        vis.capture_screen_image(filename, do_render=True)
 
         # Update the progress bar
         glb.pbar.update(1)
@@ -155,7 +198,7 @@ def add_cameras(rec: pycolmap.Reconstruction, vis: o3d.visualization.Visualizer)
         vis.add_geometry(cam)
 
 
-def get_updated_extrinsics(idx: int) -> np.ndarray:
+def get_updated_extrinsics(glb) -> np.ndarray:
     """Get camera extrinsics for a given frame.
 
     Args:
@@ -164,48 +207,37 @@ def get_updated_extrinsics(idx: int) -> np.ndarray:
     Returns:
         np.ndarray: Camera extrinsics.
     """
-    extrinsic = np.eye(4)
+    t0 = 1.0 * glb.idx / glb.num_frames
 
-    t = np.array([0, 0, 10], dtype=np.float64)
+    t = np.array([0, 0, glb.t(t0)], dtype=np.float64) * glb.scale
 
-    # rotate figure to look at origin
-    R = np.array(
-        [
-            [1, 0, 0],
-            [0, 1, 0],
-            [0, 0, 1],
-        ],
-        dtype=np.float64,
-    )
-
-    angle = (idx / 600) * 2 * np.pi
+    # compute current turntable angle
+    theta = glb.theta(t0)
     R_z = np.array(
         [
-            [np.cos(angle), -np.sin(angle), 0],
-            [np.sin(angle), np.cos(angle), 0],
+            [np.cos(theta), -np.sin(theta), 0],
+            [np.sin(theta), np.cos(theta), 0],
             [0, 0, 1],
         ],
         dtype=np.float64,
     )
 
-    # rotate around x
-    angle = 120
-    angle = angle / 180 * np.pi
+    # rotate for tilt, 0 from bottom, 90 from side, 180 from top
+    phi = np.deg2rad(glb.phi(t0))
     R_x = np.array(
         [
             [1, 0, 0],
-            [0, np.cos(angle), -np.sin(angle)],
-            [0, np.sin(angle), np.cos(angle)],
+            [0, np.cos(phi), -np.sin(phi)],
+            [0, np.sin(phi), np.cos(phi)],
         ],
         dtype=np.float64,
     )
 
-    R = R_x @ R_z
-
-    extrinsic[:3, :3] = R
+    extrinsic = np.eye(4)
+    extrinsic[:3, :3] = R_x @ R_z
     extrinsic[:3, 3] = t
-
-    return extrinsic
+    # first transform to pca aligned space, and then apply rotation
+    return extrinsic @ glb.pca_transform
 
 
 def render_movie(store_path: str, movie_path: str) -> None:
@@ -241,6 +273,15 @@ def create_movie(paths: DataPaths) -> None:
     shutil.rmtree(os.path.join(paths.visualizations, "frames"))
 
 
+def make_gif(store_path: str, movie_path: str):
+    """Crashes when used with many more frames than 50."""
+    frames = [Image.open(image) for image in sorted(glob.glob(f"{store_path}/*.png"))]
+    frame_one = frames[0]
+    frame_one.save(
+        movie_path, format="GIF", append_images=frames, save_all=True, duration=10, loop=0
+    )
+
+
 def main(args: argparse.Namespace):
     """Main function."""
     super_path = os.path.join(args.data_path, args.scene, "sparse", args.model_name)
@@ -253,12 +294,19 @@ def main(args: argparse.Namespace):
         super_model = align_models(
             reconstruction_anchor=baseline_model, reconstruction_align=super_model
         )
+        pca_transform = compute_pca_on_camera_poses(baseline_model)
+        scale = compute_scale_on_points(baseline_model)
+
     except Exception:
+        pca_transform = None
+        scale = None
         logging.info("No baseline model found. Skipping alignment.")
 
     print(super_model.summary())
 
-    render_frames(super_model, os.path.join(movie_dir, "frames"))
+    render_frames(
+        super_model, os.path.join(movie_dir, "frames"), pca_transform=pca_transform, scale=scale
+    )
 
     render_movie(os.path.join(movie_dir, "frames"), os.path.join(movie_dir, "sparse.mp4"))
 

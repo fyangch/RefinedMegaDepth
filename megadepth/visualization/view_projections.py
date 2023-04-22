@@ -37,8 +37,40 @@ def pca(data: np.ndarray) -> Callable[[np.ndarray], np.ndarray]:
         lambda x: (x - mean)
         / scale
         @ sorted_eigenvectors
-        @ np.array([[0, -1, 0], [0, 0, -1], [1, 0, 0]]).T  # inverse
+        # @ np.array([[0, -1, 0], [0, 0, -1], [1, 0, 0]]).T  # inverse
     )
+
+
+def pca_matrix(data: np.ndarray) -> np.ndarray:
+    """Computes pca on the data matrix and returns a coordinate transform as a 4x4 matrix.
+
+    Args:
+        data: np.ndarray of shape (N, 3)
+
+    Returns:
+        lambda x: np.ndarray of shape (N, 3) -> np.ndarray of shape (N, 3)
+
+    """
+    mean = data.mean(axis=0)
+    standardized_data = data - mean
+    scale = data.std()
+    standardized_data /= scale
+    covariance_matrix = np.cov(standardized_data, ddof=0, rowvar=False)
+    eigenvalues, eigenvectors = np.linalg.eig(covariance_matrix)
+    order_of_importance = np.argsort(eigenvalues)[::-1]
+    sorted_eigenvectors = eigenvectors[:, order_of_importance]
+    # Ensure handedness doesnt change
+    if np.linalg.det(sorted_eigenvectors) < 0:
+        sign = np.sign(np.ones((1, 3)) @ sorted_eigenvectors)
+        det_sign = np.linalg.det(sorted_eigenvectors)
+        sorted_eigenvectors = sorted_eigenvectors * sign * det_sign
+
+    sorted_eigenvectors = sorted_eigenvectors
+    pca_transform = np.eye(4)
+    # build the inverse by hand [R.T,-R.T@t]
+    pca_transform[:3, :3] = sorted_eigenvectors.T
+    pca_transform[:3, 3] = -sorted_eigenvectors.T @ mean
+    return pca_transform
 
 
 def plot_view_projection(
@@ -58,8 +90,7 @@ def plot_view_projection(
     id1, id2 = [(0, 1), (0, 2), (1, 2)][view]
     for data in Data:
         labels = ["X", "Z", "Y"]
-        d = data @ np.array([[0, -1, 0], [0, 0, -1], [1, 0, 0]])
-        plt.scatter(d[:, id1], d[:, id2], s=s, alpha=alpha, *args, **kwargs)
+        plt.scatter(data[:, id1], data[:, id2], s=s, alpha=alpha, *args, **kwargs)
         plt.title(view_names[view])
     plt.axis("scaled")
     plt.xlim(-limit, limit)
