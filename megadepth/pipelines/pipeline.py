@@ -58,6 +58,12 @@ class Pipeline:
                 return True
             except Exception:
                 return False
+        elif model == ModelType.REFINED:
+            try:
+                self.refined_model = pycolmap.Reconstruction(self.paths.refined_sparse)
+                return True
+            except Exception:
+                return False
         elif model == ModelType.DENSE:
             try:
                 self.dense_model = pycolmap.Reconstruction(self.paths.dense)
@@ -93,8 +99,8 @@ class Pipeline:
             reconstruction_anchor=baseline_model, reconstruction_align=self.sparse_model
         )
 
-        if overwrite:
-            self.sparse_model.write_binary(str(self.paths.sparse))
+        self.sparse_model.write_binary(str(self.paths.sparse))
+        logging.info("Aligned sparse model to baseline model.")
 
         return self.sparse_model
 
@@ -156,10 +162,26 @@ class Pipeline:
 
         # TODO: decide if this can be done in the abstract class
 
-        # TODO: implement MVS
-        # pycolmap.undistort_images(mvs_path, output_path, image_dir)
-        # pycolmap.patch_match_stereo(mvs_path)  # requires compilation with CUDA
-        # pycolmap.stereo_fusion(mvs_path / "dense.ply", mvs_path)
+        logging.info("Running undistort_images...")
+        pycolmap.undistort_images(
+            output_path=self.paths.dense,
+            input_path=self.paths.refined_sparse,
+            image_path=self.paths.images,
+            verbose=self.args.verbose,
+        )
+
+        logging.info("Running patch_match_stereo...")
+        pycolmap.patch_match_stereo(
+            workspace_path=self.paths.dense,
+            verbose=self.args.verbose,
+        )
+
+        logging.info("Running stereo_fusion...")
+        pycolmap.stereo_fusion(
+            output_path=self.paths.dense / "dense.ply",
+            workspace_path=self.paths.dense,
+            verbose=self.args.verbose,
+        )
 
         end = time.time()
         logging.info(f"Time to run MVS: {datetime.timedelta(seconds=end - start)}")

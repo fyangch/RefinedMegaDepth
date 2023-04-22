@@ -6,6 +6,7 @@ class ModelType(Enum):
     """Enum for the different model types."""
 
     SPARSE = "sparse"
+    REFINED = "refined"
     DENSE = "dense"
 
 
