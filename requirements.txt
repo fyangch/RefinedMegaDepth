@@ -2,4 +2,5 @@ pytorch
 numpy
 matplotlib
 pandas
+scikit-image
 git+https://github.com/CSAILVision/semantic-segmentation-pytorch.git@master

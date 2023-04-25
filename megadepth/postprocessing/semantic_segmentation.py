@@ -2,10 +2,11 @@
 import os
 from urllib.request import urlretrieve
 
+import cv2
 import numpy as np
+import PIL
 import torch
 from mit_semseg.models import ModelBuilder, SegmentationModule
-from PIL import Image
 from torchvision import transforms
 
 encoder_url = (
@@ -54,16 +55,28 @@ def get_segmentation_model() -> SegmentationModule:
     return model
 
 
-def get_segmentation_map(image: Image, model: SegmentationModule) -> np.ndarray:
+def get_segmentation_map(
+    image: PIL.Image, model: SegmentationModule, max_size: int = 1024
+) -> np.ndarray:
     """Extract the segmentation map from the image.
 
     Args:
-        image (Image): Undistorted image.
+        image (PIL.Image): Undistorted image.
         model (SegmentationModule): Segmentation model.
+        max_size (int, optional): Maximum width/height for the segmentation. Defaults to 1024.
 
     Returns:
-        np.ndarray: Predicted segmentation map with shape (height, width).
+        np.ndarray: Predicted segmentation map with the original image size.
     """
+    original_size = image.size
+
+    # downscale image to such that the largest dimension is max_size
+    if max(image.size) > max_size:
+        scale = max_size / max(image.size)
+        new_size = tuple(int(x * scale) for x in image.size)
+        image = image.resize(new_size, PIL.Image.LANCZOS)
+
+    # get segmentation map
     img_data = pil_to_tensor(image)
     output_size = img_data.shape[1:]
 
@@ -76,4 +89,7 @@ def get_segmentation_map(image: Image, model: SegmentationModule) -> np.ndarray:
         scores = model(batch, segSize=output_size)
 
     _, pred = torch.max(scores, dim=1)
-    return pred.cpu()[0].numpy()
+    segmentation_map = pred.cpu()[0].numpy().astype(np.uint8)
+
+    # upscale segmentation map to original image size
+    return cv2.resize(segmentation_map, dsize=original_size, interpolation=cv2.INTER_NEAREST)
