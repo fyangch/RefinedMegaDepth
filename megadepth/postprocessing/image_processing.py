@@ -19,27 +19,24 @@ def filter_unstable_depths(
         np.ndarray: Filtered depth map.
     """
     # apply median filter
-    median_filtered = cv2.medianBlur(depth_map, kernel_size)
+    median = cv2.medianBlur(depth_map, kernel_size)
 
     # a depth value D is unstable if max(D/M, M/D) > threshold where M is the corresponding median
-    unstable_1 = median_filtered > threshold * depth_map  # avoid division by 0....
-    unstable_2 = depth_map > threshold * median_filtered
+    unstable_1 = median > threshold * depth_map  # avoid division by 0....
+    unstable_2 = depth_map > threshold * median
     unstable = unstable_1 | unstable_2
 
-    # only consider removing valid depth values from the original depth map
-    valid = depth_map > 0.0
-    unstable = unstable & valid
-
-    # remove unstable pixels from the median filtered depth map
+    # remove unstable pixels from the depth map
     stable = np.logical_not(unstable)
-    return median_filtered * stable
+    return depth_map * stable
 
 
-def erode_and_remove(depth_map: np.ndarray, segmentation_map: np.ndarray) -> np.ndarray:
+def erode_and_remove(depth_map: np.ndarray, n_pixels: int = 200) -> np.ndarray:
     """Erode the segmentation map and remove the small connected components.
 
     Args:
         depth_map (np.ndarray): Depth map.
+        n_pixels (int): Connected components with less pixels will be removed. Defaults to 200.
 
     Returns:
         np.ndarray: Eroded depth map and filtered depth map.
