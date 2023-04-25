@@ -71,6 +71,8 @@ def render_frames(
     render_frames.store_path = store_path
     render_frames.pbar = tqdm(total=600)
 
+    render_frames.extrinsics = fly_through()
+
     if not os.path.exists(store_path):
         os.makedirs(store_path)
 
@@ -92,6 +94,7 @@ def render_frames(
         if glb.idx < 600:
             camera = ctr.convert_to_pinhole_camera_parameters()
             camera.extrinsic = get_updated_extrinsics(glb.idx)
+            # camera.extrinsic = glb.extrinsics[glb.idx]
             ctr.convert_from_pinhole_camera_parameters(camera)
 
         else:
@@ -152,6 +155,76 @@ def add_cameras(rec: pycolmap.Reconstruction, vis: o3d.visualization.Visualizer)
         vis.add_geometry(cam)
 
 
+def fly_through(num_frames: int = 600) -> np.ndarray:
+    """Fly through the point cloud.
+
+    Args:
+        num_frames (int, optional): Number of frames to render. Defaults to 600.
+
+    Returns:
+        np.ndarray: Camera extrinsics for each frame.
+    """
+    # Define the positions and orientations of the camera for each frame
+    positions = np.zeros((num_frames, 3))
+    orientations = np.zeros((num_frames, 3))
+
+    extrinsics = np.zeros((num_frames, 4, 4))
+
+    for i in range(num_frames):
+        # Define the position of the camera for this frame
+        positions[i, 0] = np.sin(i / num_frames * 2 * np.pi) * 0.5
+        positions[i, 1] = np.cos(i / num_frames * 2 * np.pi) * 0.5
+        positions[i, 2] = np.sin(i / num_frames * 4 * np.pi) * 0.5
+
+        # Define the orientation of the camera for this frame
+        orientations[i, 0] = np.sin(i / num_frames * 2 * np.pi)
+        orientations[i, 1] = np.cos(i / num_frames * 2 * np.pi)
+        orientations[i, 2] = np.sin(i / num_frames * 4 * np.pi)
+
+        # Calculate the extrinsic matrix for this frame
+        R = np.array(
+            [
+                [np.cos(orientations[i, 0]), 0, np.sin(orientations[i, 0])],
+                [0, 1, 0],
+                [-np.sin(orientations[i, 0]), 0, np.cos(orientations[i, 0])],
+            ]
+        )
+        R = np.dot(
+            R,
+            np.array(
+                [
+                    [1, 0, 0],
+                    [0, np.cos(orientations[i, 1]), -np.sin(orientations[i, 1])],
+                    [0, np.sin(orientations[i, 1]), np.cos(orientations[i, 1])],
+                ]
+            ),
+        )
+        R = np.dot(
+            R,
+            np.array(
+                [
+                    [np.cos(orientations[i, 2]), -np.sin(orientations[i, 2]), 0],
+                    [np.sin(orientations[i, 2]), np.cos(orientations[i, 2]), 0],
+                    [0, 0, 1],
+                ]
+            ),
+        )
+        T = np.array(
+            [
+                [1, 0, 0, positions[i, 0]],
+                [0, 1, 0, positions[i, 1]],
+                [0, 0, 1, positions[i, 2]],
+                [0, 0, 0, 1],
+            ]
+        )
+        R = np.vstack((R, np.array([0, 0, 0])))
+        R = np.hstack((R, np.array([[0], [0], [0], [1]])))
+        extrinsic = np.dot(R, T)
+        extrinsics[i, :, :] = extrinsic
+
+    return extrinsics
+
+
 def get_updated_extrinsics(idx: int) -> np.ndarray:
     """Get camera extrinsics for a given frame.
 
@@ -205,12 +278,13 @@ def get_updated_extrinsics(idx: int) -> np.ndarray:
     return extrinsic
 
 
-def render_movie(store_path: str, movie_path: str) -> None:
+def render_movie(store_path: str, movie_path: str, args: argparse.Namespace) -> None:
     """Make a movie from the frames of the animation.
 
     Args:
         store_path (str): Path to the frames of the animation.
         movie_path (str): Path to store the movie.
+        args (argparse.Namespace): Command line arguments.
     """
     cmd = "ffmpeg "
     cmd += f"-framerate 30 -i {store_path}/%04d.png "
@@ -228,7 +302,7 @@ def main(args: argparse.Namespace):
 
     render_frames(super_path, os.path.join(movie_dir, "frames"))
 
-    render_movie(os.path.join(movie_dir, "frames"), os.path.join(movie_dir, "dense.mp4"))
+    render_movie(os.path.join(movie_dir, "frames"), os.path.join(movie_dir, "dense.mp4"), args)
 
     shutil.rmtree(os.path.join(movie_dir, "frames"))
 
