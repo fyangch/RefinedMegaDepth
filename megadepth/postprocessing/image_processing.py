@@ -1,6 +1,7 @@
 """Functions that perform image processing steps required for the cleanup."""
 import cv2
 import numpy as np
+from skimage.measure import label
 
 
 def filter_unstable_depths(
@@ -41,6 +42,30 @@ def erode_and_remove(depth_map: np.ndarray, n_pixels: int = 200) -> np.ndarray:
     Returns:
         np.ndarray: Eroded depth map and filtered depth map.
     """
-    # TODO: Supplementary material, Algorithm 1, line 18
+    # create binary mask of the depth map
+    mask = (depth_map > 0.0).astype(np.uint8)
 
-    raise NotImplementedError()
+    # apply closing (dilation followed by erosion)
+    closing_kernel = np.ones((2, 2), np.uint8)
+    mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, closing_kernel)
+
+    # apply erosion using a disk-shaped 4x4 kernel
+    erosion_kernel = np.array(
+        [
+            [0, 1, 1, 0],
+            [1, 1, 1, 1],
+            [1, 1, 1, 1],
+            [0, 1, 1, 0],
+        ],
+        dtype=np.uint8,
+    )
+    mask = cv2.morphologyEx(mask, cv2.MORPH_ERODE, erosion_kernel)
+
+    # remove small connected components
+    labeled_mask, num_components = label(mask, background=0, connectivity=2, return_num=True)
+    for i in range(1, num_components + 1):
+        component_size = labeled_mask[labeled_mask == i].size
+        if component_size < n_pixels:
+            depth_map[labeled_mask == i] = 0.0
+
+    return depth_map * (mask == 1)

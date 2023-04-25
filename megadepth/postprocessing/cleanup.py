@@ -42,7 +42,7 @@ def refine_depth_maps(
 
         depth_map = filter_unstable_depths(depth_map)
         depth_map = apply_semantic_filtering(depth_map, segmentation_map)
-        depth_map = erode_and_remove(depth_map, segmentation_map)
+        depth_map = erode_and_remove(depth_map)
 
         # TODO: finish ordinal labeling
         if is_selfie_image(depth_map, segmentation_map):
