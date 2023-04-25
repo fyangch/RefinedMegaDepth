@@ -3,6 +3,34 @@ import cv2
 import numpy as np
 from skimage.measure import label
 
+# disk-shaped kernel with radius 2
+disk_r2 = np.array(
+    [
+        [0, 1, 1, 1, 0],
+        [1, 1, 1, 1, 1],
+        [1, 1, 1, 1, 1],
+        [1, 1, 1, 1, 1],
+        [0, 1, 1, 1, 0],
+    ],
+    dtype=np.uint8,
+)
+
+# disk-shaped kernel with radius 4
+disk_r4 = np.array(
+    [
+        [0, 0, 1, 1, 1, 1, 1, 0, 0],
+        [0, 1, 1, 1, 1, 1, 1, 1, 0],
+        [1, 1, 1, 1, 1, 1, 1, 1, 1],
+        [1, 1, 1, 1, 1, 1, 1, 1, 1],
+        [1, 1, 1, 1, 1, 1, 1, 1, 1],
+        [1, 1, 1, 1, 1, 1, 1, 1, 1],
+        [1, 1, 1, 1, 1, 1, 1, 1, 1],
+        [0, 1, 1, 1, 1, 1, 1, 1, 0],
+        [0, 0, 1, 1, 1, 1, 1, 0, 0],
+    ],
+    dtype=np.uint8,
+)
+
 
 def filter_unstable_depths(
     depth_map: np.ndarray,
@@ -33,7 +61,7 @@ def filter_unstable_depths(
 
 
 def erode_and_remove(depth_map: np.ndarray, n_pixels: int = 200) -> np.ndarray:
-    """Erode the segmentation map and remove the small connected components.
+    """Erode the depth map and remove small connected components.
 
     Args:
         depth_map (np.ndarray): Depth map.
@@ -45,21 +73,9 @@ def erode_and_remove(depth_map: np.ndarray, n_pixels: int = 200) -> np.ndarray:
     # create binary mask of the depth map
     mask = (depth_map > 0.0).astype(np.uint8)
 
-    # apply closing (dilation followed by erosion)
-    closing_kernel = np.ones((2, 2), np.uint8)
-    mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, closing_kernel)
-
-    # apply erosion using a disk-shaped 4x4 kernel
-    erosion_kernel = np.array(
-        [
-            [0, 1, 1, 0],
-            [1, 1, 1, 1],
-            [1, 1, 1, 1],
-            [0, 1, 1, 0],
-        ],
-        dtype=np.uint8,
-    )
-    mask = cv2.morphologyEx(mask, cv2.MORPH_ERODE, erosion_kernel)
+    # apply closing and erosion
+    mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, disk_r2)
+    mask = cv2.morphologyEx(mask, cv2.MORPH_ERODE, disk_r4)
 
     # remove small connected components
     labeled_mask, num_components = label(mask, background=0, connectivity=2, return_num=True)

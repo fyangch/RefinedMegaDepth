@@ -3,6 +3,8 @@ import cv2
 import numpy as np
 from skimage.measure import label
 
+from megadepth.postprocessing.image_processing import disk_r4
+
 background_labels = np.array([1, 25, 48, 68, 84, 113, 16])
 removal_labels = np.array(
     [2, 20, 80, 102, 83, 76, 103, 36, 134, 136, 87, 100, 144, 149, 43, 93, 8, 115, 21, 26, 60, 128]
@@ -75,16 +77,7 @@ def apply_semantic_filtering(
 
     # get removal mask, dilate it and remove all corresponding depth values
     removal_mask = get_mask(segmentation_map, "removal").astype(np.uint8)
-    kernel = np.array(
-        [
-            [0, 1, 1, 0],
-            [1, 1, 1, 1],
-            [1, 1, 1, 1],
-            [0, 1, 1, 0],
-        ],
-        dtype=np.uint8,
-    )
-    removal_mask = cv2.morphologyEx(removal_mask, cv2.MORPH_DILATE, kernel)
+    removal_mask = cv2.morphologyEx(removal_mask, cv2.MORPH_DILATE, disk_r4)
     return depth_map * (removal_mask == 0)
 
 
