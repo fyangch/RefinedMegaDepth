@@ -1,8 +1,10 @@
 """This is a re-implementation of the MegaDepth postprocessing steps."""
 
 import os
+import shutil
 from pathlib import Path
 
+import numpy as np
 from PIL import Image
 from tqdm import tqdm
 
@@ -29,11 +31,14 @@ def refine_depth_maps(
     Args:
         image_dir (Path): Path to the directory that contains the undistorted RGB images.
         depth_map_dir (Path): Path to the directory that contains the raw depth maps.
-        output_dir (Path): Path to the directory where the refined depth maps should be saved.
+        output_dir (Path): Path to the output directory.
     """
+    # create subdirectories for the final depth maps and undistorted images
+    os.makedirs(output_dir / "depth_maps", exist_ok=True)
+    os.makedirs(output_dir / "images", exist_ok=True)
+
     model = get_segmentation_model()
 
-    # TODO: consider creating batches for the prediction of the segmentation maps
     for image_fn in tqdm(os.listdir(image_dir)):
         image = Image.open(image_dir / image_fn).convert("RGB")
         depth_map = load_depth_map(os.path.join(depth_map_dir, f"{image_fn}.geometric.bin"))
@@ -48,4 +53,9 @@ def refine_depth_maps(
         if is_selfie_image(depth_map, segmentation_map):
             _ = get_ordinal_labels()
 
-        # TODO: save depth map (+ ordinal labels) ==> check format of the original MegaDepth dataset
+        # copy undistorted image to results directory
+        shutil.copy(image_dir / image_fn, output_dir / "images" / image_fn)
+
+        # save refined depth map
+        with open(output_dir / "depth_maps" / f"{image_fn}.npy", "wb") as f:
+            np.save(f, depth_map)

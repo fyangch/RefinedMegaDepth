@@ -1,61 +1,43 @@
 """Functions that implement the semantic filtering steps for the cleanup.."""
-from typing import Literal
-
+import cv2
 import numpy as np
 from skimage.measure import label
 
-foreground_labels = np.array(
-    [
-        12,
-        15,
-        19,
-        31,
-        43,
-        66,
-        67,
-        69,
-        76,
-        80,
-        83,
-        87,
-        88,
-        100,
-        102,
-        103,
-        104,
-        115,
-        116,
-        119,
-        126,
-        127,
-        132,
-        136,
-        144,
-    ]
-)
 background_labels = np.array([1, 25, 48, 68, 84, 113, 16])
+removal_labels = np.array(
+    [2, 20, 80, 102, 83, 76, 103, 36, 134, 136, 87, 100, 144, 149, 43, 93, 8, 115, 21, 26, 60, 128]
+)
 
 
-def get_mask(
-    segmentation_map: np.ndarray, mask_type: Literal["foreground", "background", "sky"]
-) -> np.ndarray:
-    """Return the foreground/background/sky mask given a segmentation mask.
+def get_mask(segmentation_map: np.ndarray, mask_type: str) -> np.ndarray:
+    """Return the segmentation mask given a segmentation map and mask type.
 
     Args:
         segmentation_map (np.ndarray): Predicted segmentation map.
-        mask_type (Literal["foreground", "background", "sky"]): Mask type.
+        mask_type (str]): Mask type.
 
     Returns:
         np.ndarray: Mask with the same shape as the segmentation map.
     """
-    if mask_type == "foreground":
-        mask = np.in1d(segmentation_map, foreground_labels)
-        return np.reshape(mask, segmentation_map.shape)
-    elif mask_type == "background":
+    if mask_type == "background":
         mask = np.in1d(segmentation_map, background_labels)
+        return np.reshape(mask, segmentation_map.shape)
+    elif mask_type == "removal":
+        mask = np.in1d(segmentation_map, removal_labels)
         return np.reshape(mask, segmentation_map.shape)
     elif mask_type == "sky":
         return segmentation_map == 2
+    elif mask_type == "tree":
+        return segmentation_map == 4
+    elif mask_type == "plant":
+        return segmentation_map == 17
+    elif mask_type == "creature":
+        mask = np.in1d(segmentation_map, np.array([12, 126]))
+        return np.reshape(mask, segmentation_map.shape)
+    elif mask_type == "fountain":
+        return segmentation_map == 104
+    elif mask_type == "sculpture":
+        return segmentation_map == 132
     else:
         raise ValueError(f"Invalid mask type: {mask_type}")
 
@@ -75,28 +57,35 @@ def apply_semantic_filtering(
     Returns:
         np.ndarray: Filtered depth map.
     """
-    foreground_mask = get_mask(segmentation_map, "foreground")
-    sky_mask = get_mask(segmentation_map, "sky")
+    # check connected components of different types of foreground masks
+    for mask_type in ["tree", "plant", "creature", "fountain", "sculpture"]:
+        # get connected components from the current mask
+        mask = get_mask(segmentation_map, mask_type)
+        labeled_mask, num_components = label(mask, background=0, connectivity=2, return_num=True)
 
-    # compute connected components from foreground segmentation
-    labeled_mask, num_components = label(
-        foreground_mask, background=0, connectivity=2, return_num=True
+        # iterate over connected components
+        for i in range(1, num_components + 1):
+            # compute fraction of valid depths in the current component
+            depth_vector = depth_map[labeled_mask == i]
+            fraction = np.count_nonzero(depth_vector) / depth_vector.size
+
+            # set depth values to 0 if the fraction is smaller than 0.5
+            if fraction < threshold:
+                depth_map[labeled_mask == i] = 0.0
+
+    # get removal mask, dilate it and remove all corresponding depth values
+    removal_mask = get_mask(segmentation_map, "removal").astype(np.uint8)
+    kernel = np.array(
+        [
+            [0, 1, 1, 0],
+            [1, 1, 1, 1],
+            [1, 1, 1, 1],
+            [0, 1, 1, 0],
+        ],
+        dtype=np.uint8,
     )
-
-    # iterate over connected components
-    for i in range(1, num_components + 1):
-        # compute fraction of valid depths in the current component
-        depth_vector = depth_map[labeled_mask == i]
-        fraction = np.count_nonzero(depth_vector) / depth_vector.size
-
-        # set depth values to 0 if the fraction is smaller than 0.5
-        if fraction < threshold:
-            depth_map[labeled_mask == i] = 0.0
-
-    # filter out all depths from the sky region
-    depth_map[sky_mask] = 0.0
-
-    return depth_map
+    removal_mask = cv2.morphologyEx(removal_mask, cv2.MORPH_DILATE, kernel)
+    return depth_map * (removal_mask == 0)
 
 
 def is_selfie_image(depth_map: np.ndarray, segmentation_map: np.ndarray, threshold=0.35) -> bool:
@@ -122,4 +111,5 @@ def is_selfie_image(depth_map: np.ndarray, segmentation_map: np.ndarray, thresho
 # not sure yet about this step
 def get_ordinal_labels():
     """Get the ordinal labels."""
-    raise NotImplementedError()
+    # TODO
+    return
