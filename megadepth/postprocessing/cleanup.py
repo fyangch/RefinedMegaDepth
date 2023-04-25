@@ -42,11 +42,10 @@ def refine_depth_maps(
 
         depth_map = filter_unstable_depths(depth_map)
         depth_map = apply_semantic_filtering(depth_map, segmentation_map)
-        depth_map = erode_and_remove(depth_map)
+        depth_map = erode_and_remove(depth_map, segmentation_map)
 
-        # not sure about this part...
+        # TODO: finish ordinal labeling
         if is_selfie_image(depth_map, segmentation_map):
-            # ordinal_labels = get_ordinal_labels() # commented out because it's not used
             _ = get_ordinal_labels()
 
         # TODO: save depth map (+ ordinal labels) ==> check format of the original MegaDepth dataset

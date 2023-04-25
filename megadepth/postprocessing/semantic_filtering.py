@@ -60,29 +60,6 @@ def get_mask(
         raise ValueError(f"Invalid mask type: {mask_type}")
 
 
-def check_semantics(mask, depth_map, threshold=0.5):
-    """Check percentage of valid depths per segmentation."""
-    # Find connected components in mask
-    labeled_mask, num_features = label(mask, background=0, connectivity=2, return_num=True)
-
-    # Iterate over each connected component
-    for i in range(1, num_features + 1):
-        # Get depth values for current component
-        depth_vector = depth_map[labeled_mask == i]
-
-        # Compute ratio of NaN values to connected pixels
-        num_pixels_connected = np.sum(labeled_mask == i)
-
-        ratio = np.sum(np.count_nonzero(depth_vector)) / num_pixels_connected
-        print(ratio)
-        # If ratio is smaller than 0.5, set depth values to NaN/ 0
-        if ratio < threshold:
-            depth_map[labeled_mask == i] = 0
-
-    return depth_map
-
-
-# TODO: Change function signature if necessary
 def apply_semantic_filtering(
     depth_map: np.ndarray,
     segmentation_map: np.ndarray,
@@ -98,25 +75,30 @@ def apply_semantic_filtering(
     Returns:
         np.ndarray: Filtered depth map.
     """
-    # TODO: Supplementary material, Algorithm 1, line 12-17
+    foreground_mask = get_mask(segmentation_map, "foreground")
+    sky_mask = get_mask(segmentation_map, "sky")
 
-    # foreground_mask = get_mask(segmentation_map, "foreground")
-    # background_mask = get_mask(segmentation_map, "background")
-    # sky_mask = get_mask(segmentation_map, "sky")
+    # compute connected components from foreground segmentation
+    labeled_mask, num_components = label(
+        foreground_mask, background=0, connectivity=2, return_num=True
+    )
 
-    # 1. compute connected components from foreground segmentation
+    # iterate over connected components
+    for i in range(1, num_components + 1):
+        # compute fraction of valid depths in the current component
+        depth_vector = depth_map[labeled_mask == i]
+        fraction = np.count_nonzero(depth_vector) / depth_vector.size
 
-    # 2. for each connected component
-    # if C is small: continue
+        # set depth values to 0 if the fraction is smaller than 0.5
+        if fraction < threshold:
+            depth_map[labeled_mask == i] = 0.0
 
-    # a. count percentage of valid depths
+    # filter out all depths from the sky region
+    depth_map[sky_mask] = 0.0
 
-    # if percentage is < 50% mask out the component
-
-    raise NotImplementedError()
+    return depth_map
 
 
-# TODO: Change function signature if necessary
 def is_selfie_image(depth_map: np.ndarray, segmentation_map: np.ndarray, threshold=0.35) -> bool:
     """Check if the image is a selfie image.
 
@@ -130,7 +112,6 @@ def is_selfie_image(depth_map: np.ndarray, segmentation_map: np.ndarray, thresho
     Returns:
         bool: True if the image is a selfie image, False otherwise.
     """
-    # I guess this is the very last step? (not shown in Algorithm 1 of the supplements...)
     # ignore sky
     sky_mask = get_mask(segmentation_map, "sky")
     num_valid = np.count_nonzero(sky_mask != 0)
