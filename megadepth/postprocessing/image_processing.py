@@ -32,6 +32,21 @@ disk_r4 = np.array(
 )
 
 
+def median_filter(img, kernel_size=5):
+    """Median filter that ignores zeros and nans."""
+    # Replace zeros with NaNs
+    img_nan = np.where(img == 0, np.nan, img)
+    # compute kernel radius
+    r = (kernel_size - 1) // 2
+    # Pad the image with NaNs
+    img_padded = np.pad(img_nan, r, mode="constant", constant_values=np.nan)
+    # Apply median filter
+    IPc = np.lib.stride_tricks.sliding_window_view(img_padded, (kernel_size, kernel_size))
+    # compute nanmedian along window dimensions
+    filtered_img = np.nanmedian(IPc, axis=(2, 3))
+    return filtered_img
+
+
 def filter_unstable_depths(
     depth_map: np.ndarray,
     kernel_size: int = 5,
@@ -48,7 +63,7 @@ def filter_unstable_depths(
         np.ndarray: Filtered depth map.
     """
     # apply median filter
-    median = cv2.medianBlur(depth_map, kernel_size)
+    median = median_filter(depth_map, kernel_size)
 
     # a depth value D is unstable if max(D/M, M/D) > threshold where M is the corresponding median
     unstable_1 = median > threshold * depth_map  # avoid division by 0....
@@ -85,3 +100,35 @@ def erode_and_remove(depth_map: np.ndarray, n_pixels: int = 200) -> np.ndarray:
             depth_map[labeled_mask == i] = 0.0
 
     return depth_map * (mask == 1)
+
+
+if __name__ == "__main__":
+    depth = np.array(
+        [
+            [0, 0, 0, 0, 0],
+            [2, 2, 2, 2, 2],
+            [0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0],
+            [2, 2, 2, 2, 2],
+            [0, 0, 0, 0, 0],
+        ],
+        dtype=np.uint8,
+    )
+    # depth = np.where(depth == 0, np.nan, depth)
+    print(median_filter(depth, 3))
+    print(cv2.medianBlur(depth, 3))
+    print()
+
+    # [[2. 2. 2. 2. 2.]
+    # [2. 2. 2. 2. 2.]
+    # [2. 2. 2. 2. 2.]
+    # [2. 2. 2. 2. 2.]
+    # [2. 2. 2. 2. 2.]
+    # [2. 2. 2. 2. 2.]]
+
+    # [[0 0 0 0 0]
+    # [0 0 0 0 0]
+    # [0 0 0 0 0]
+    # [0 0 0 0 0]
+    # [0 0 0 0 0]
+    # [0 0 0 0 0]]
