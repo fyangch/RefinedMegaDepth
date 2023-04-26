@@ -47,7 +47,7 @@ def plot_image_overlay(images: list, titles: list, path=None) -> None:
         img = np.array(images[i], float) / 255
         fig.add_subplot(1, len(images), i + 1)
         plt.axis("off")
-        plt.title(titles[i])
+        plt.title(titles[i - 1])
         plt.imshow(images[0])
 
         amin, amax = np.quantile(img[img > 0], [0.01, 0.985])
