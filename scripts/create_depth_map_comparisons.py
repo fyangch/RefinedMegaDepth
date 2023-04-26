@@ -56,21 +56,27 @@ def get_image_path(scene, img_name):
 
 def get_mega_depth_map_path(scene, img_name):
     """Compute path to depth map on cluster for given scene and image_name."""
-    return rf"/cluster/project/infk/courses/252-0579-00L/group01/\
-undistorted_md/phoenix/S6/zl548/MegaDepth_v1/{scene}/dense0/depths/{img_name}.h5"
+    return (
+        rf"/cluster/project/infk/courses/252-0579-00L/group01/"
+        rf"undistorted_md/phoenix/S6/zl548/MegaDepth_v1/{scene}/dense0/depths/{img_name}.h5"
+    )
 
 
 def get_our_raw_depth_map_path(scene, img_name):
     """Compute path to depth map on cluster for given scene and image_name."""
-    return rf"/cluster/project/infk/courses/252-0579-00L/group01/scenes/{scene}\
-        /dense/superpoint_max-superglue-netvlad-50-KA+BA/stereo/\
-            depth_maps/{img_name}.jpg.geometric.bin"
+    return (
+        rf"/cluster/project/infk/courses/252-0579-00L/group01/scenes/{scene}"
+        r"/dense/superpoint_max-superglue-netvlad-50-KA+BA/stereo/"
+        rf"depth_maps/{img_name}.jpg.geometric.bin"
+    )
 
 
 def get_our_filtered_depth_map_path(scene, img_name):
     """Compute path to depth map on cluster for given scene and image_name."""
-    return rf"/cluster/project/infk/courses/252-0579-00L/group01/scenes/{scene}\
-        /results/superpoint_max-superglue-netvlad-50-KA+BA/depth_maps/{img_name}.jpg.npy"
+    return (
+        rf"/cluster/project/infk/courses/252-0579-00L/group01/scenes/{scene}"
+        rf"/results/superpoint_max-superglue-netvlad-50-KA+BA/depth_maps/{img_name}.jpg.npy"
+    )
 
 
 def get_img_name(path):
@@ -124,6 +130,7 @@ print(len(difference_filt), len(difference_mega), len(intersecion))
 
 intersection_names = list(intersecion)
 pixel_count = np.zeros(len(intersecion))
+pixel_count_mega = np.zeros(len(intersecion))
 coverage_raw = np.zeros(len(intersecion))
 coverage_filt = np.zeros(len(intersecion))
 coverage_mega = np.zeros(len(intersecion))
