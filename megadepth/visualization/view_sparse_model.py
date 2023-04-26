@@ -83,9 +83,10 @@ def pcd_from_colmap(
     col = col[idx]
 
     pcd = o3d.geometry.PointCloud()
-    pcd.points = o3d.utility.Vector3dVector(np.stack(points))
-    pcd.colors = o3d.utility.Vector3dVector(np.stack(colors))
-    print(len(points), len(rec.points3D))
+    pcd.points = o3d.utility.Vector3dVector(np.stack(pts))
+    pcd.colors = o3d.utility.Vector3dVector(np.stack(col))
+    # print(len(pts), len(rec.points3D))
+    logging.info(f"Number of points: {len(pts)} ({len(rec.points3D)})")
     return pcd
 
 
