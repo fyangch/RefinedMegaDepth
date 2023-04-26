@@ -40,6 +40,30 @@ def plot_images(images: list, titles: list, path=None) -> None:
     plt.close(fig)
 
 
+def plot_image_overlay(images: list, titles: list, path=None) -> None:
+    """Plot image and depth maps with colormap from megadepth."""
+    fig = plt.figure(figsize=(15, 15))
+    for i in range(1, len(images)):
+        img = np.array(images[i], float) / 255
+        fig.add_subplot(1, len(images), i + 1)
+        plt.axis("off")
+        plt.title(titles[i])
+        plt.imshow(images[0])
+
+        amin, amax = np.quantile(img[img > 0], [0.01, 0.985])
+        if amin == amax:  # if ordinal labels
+            amin, amax = 0, np.max(img)
+        img[img == 0] = np.nan
+        nan_mask = np.zeros_like(img)
+        nan_mask[~np.isnan(img)] = np.nan
+        plt.imshow(img, alpha=0.5, cmap="jet", norm=Normalize(amin, amax), interpolation="nearest")
+    if path is None:
+        plt.show()
+    else:
+        fig.savefig(path, dpi=600, bbox_inches="tight")
+    plt.close(fig)
+
+
 def get_all_dense_scenes():
     """Find all scenes that have a dense reconstruction."""
     return glob.glob(
@@ -52,7 +76,8 @@ def get_all_dense_scenes():
 def get_image_path(scene, img_name):
     """Compute path on cluster for given scene and image_name."""
     return (
-        rf"/cluster/project/infk/courses/252-0579-00L/group01/scenes/{scene}/images/{img_name}.jpg"
+        rf"/cluster/project/infk/courses/252-0579-00L/group01/scenes/{scene}/"
+        rf"dense/superpoint_max-superglue-netvlad-50-KA+BA/images/{img_name}.jpg"
     )
 
 
@@ -177,6 +202,11 @@ def main(scene="0229", output_path="./plots", n_samples=10):
                 [img, depth_raw, depth_filt, depth_mega],
                 ["Image", "Raw", "Filtered", "Megadepth"],
                 path=f"{output_path}/{scene}_{img_name}_comp_{box}.jpg",
+            )
+            plot_image_overlay(
+                [img, depth_raw, depth_filt, depth_mega],
+                ["Raw", "Filtered", "Megadepth"],
+                path=f"{output_path}/{scene}_{img_name}_overlay_{box}.jpg",
             )
 
     fig = plt.figure(figsize=(15, 15))
