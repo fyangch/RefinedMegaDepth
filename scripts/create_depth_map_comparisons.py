@@ -250,7 +250,7 @@ def main(scene="0229", output_path="./plots", n_samples=10):
     plt.hist(coverage_filt, alpha=0.5)
     plt.hist(coverage_mega, alpha=0.5)
     plt.legend(["Raw", "Filtered", "MegaDepth"])
-    fig.savefig(f"{output_path}s/{scene}_histogram.jpg", dpi=600, bbox_inches="tight")
+    fig.savefig(f"{output_path}/{scene}_histogram.jpg", dpi=600, bbox_inches="tight")
     plt.close(fig)
 
 
