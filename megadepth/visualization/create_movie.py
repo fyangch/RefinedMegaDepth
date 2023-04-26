@@ -130,6 +130,7 @@ def render_frames(
 
         else:
             vis.close()
+            # vis.register_animation_callback(None)
 
         glb.idx += 1
 
@@ -288,7 +289,7 @@ def main(args: argparse.Namespace):
         super_model = align_models(
             reconstruction_anchor=baseline_model, reconstruction_align=super_model
         )
-        pca_transform = compute_pca_on_camera_poses(super_model)
+        pca_transform = compute_pca_on_camera_poses(baseline_model)
         scale = compute_scale_on_points(baseline_model)
 
         logging.info("Found baseline model.")

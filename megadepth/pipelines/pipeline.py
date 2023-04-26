@@ -114,6 +114,8 @@ class Pipeline:
         import_images(self.paths.images, database, pycolmap.CameraMode.AUTO)
         image_ids = get_image_ids(database)
 
+        logging.debug(f"Successfully imported {len(image_ids)} valid images.")
+
         # delete image files that were not successfully imported
         image_fns = [fn for fn in os.listdir(self.paths.images) if fn not in image_ids]
         for fn in image_fns:

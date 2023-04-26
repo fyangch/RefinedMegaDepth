@@ -71,7 +71,16 @@ def pcd_from_colmap(
         points.append(p3D.xyz)
         colors.append(p3D.color / 255.0)
 
-    points = np.array(points)
+    pts = np.array(points)
+    col = np.array(colors)
+
+    # get idx of points inside 3 std
+    n_std = 3
+    center = pts.mean(axis=0)
+    std = pts.std(axis=0)
+    idx = np.where(np.all(np.abs(pts - center) < n_std * std, axis=1))[0]
+    pts = pts[idx]
+    col = col[idx]
 
     pcd = o3d.geometry.PointCloud()
     pcd.points = o3d.utility.Vector3dVector(np.stack(points))

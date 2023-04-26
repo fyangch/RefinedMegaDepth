@@ -61,7 +61,6 @@ class HlocPipeline(Pipeline):
             logging.debug(f"Storing pairs to {self.paths.matches_retrieval}")
 
             image_list = os.listdir(self.paths.images)
-            image_list = [img for img in image_list if img.endswith(".jpg")]
 
             pairs_from_exhaustive.main(image_list=image_list, output=self.paths.matches_retrieval)
 
