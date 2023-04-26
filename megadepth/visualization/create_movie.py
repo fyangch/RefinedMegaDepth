@@ -18,6 +18,8 @@ from megadepth.visualization.camera_trajectories import surround_view
 from megadepth.visualization.view_projections import align_models, pca_matrix
 from megadepth.visualization.view_sparse_model import pcd_from_colmap
 
+NUM_FRAMES = 600
+
 
 def compute_pca_on_camera_poses(rec: pycolmap.Reconstruction) -> np.ndarray:
     """Returns pca basis and center.
@@ -85,7 +87,7 @@ def render_frames(
     cameras: Optional[list] = None,
     store_path: Optional[str] = None,
     show_window: bool = False,
-    num_frames: int = 300,
+    num_frames: int = 600,
 ) -> None:
     """Render frames from a point cloud.
 
@@ -243,6 +245,7 @@ def visualize_point_cloud(
         cameras=cameras,
         show_window=args.visible,
         store_path=output_path,
+        num_frames=NUM_FRAMES,
     )
 
 
@@ -262,12 +265,16 @@ def render_movie(name: str, args: argparse.Namespace):
         logging.info(f"Could not find frames at {frames}")
         return
 
+    num_frames = len(os.listdir(frames))
+    logging.info(f"Rendering {num_frames} frames to {output}")
+
     cmd = "ffmpeg "
     cmd += f"-framerate 30 -i {frames}/%04d.png "
     cmd += "-vcodec libx264 -crf 30 -pix_fmt yuv420p "
     size = "1920:1080" if args.quality == "high" else "960:540"
     cmd += f"-vf scale={size} "
     cmd += f"{output} -y"
+
     os.system(cmd)
 
     # remove frames
@@ -289,7 +296,7 @@ def main(args: argparse.Namespace):
         super_model = align_models(
             reconstruction_anchor=baseline_model, reconstruction_align=super_model
         )
-        pca_transform = compute_pca_on_camera_poses(baseline_model)
+        pca_transform = compute_pca_on_camera_poses(super_model)
         scale = compute_scale_on_points(baseline_model)
 
         logging.info("Found baseline model.")
@@ -309,7 +316,13 @@ def main(args: argparse.Namespace):
     logging.info(f"(camera) Baseline scale: {compute_scale_on_camera_poses(baseline_model)}")
     logging.info(f"(camera) Super scale:    {compute_scale_on_camera_poses(super_model)}")
 
-    extrinsics = surround_view(transform=pca_transform, scale=scale, zoom_in=args.zoom_in)
+    extrinsics = surround_view(
+        transform=pca_transform,
+        scale=scale,
+        zoom_in=args.zoom_in,
+        initial_rotation=args.initial_rotation,
+        num_frames=NUM_FRAMES,
+    )
 
     min_track_length = np.ceil(len(super_model.images) * 0.005)  # 0.5% of images
     visualize_point_cloud(baseline_model, "baseline", extrinsics, min_track_length, args)
@@ -327,12 +340,13 @@ if __name__ == "__main__":
     parser.add_argument(
         "--model_type", type=str, default="sfm", choices=["sfm", "mvs"], help="Type of model."
     )
-    parser.add_argument("--zoom_in", action="store_true", help="Zoom in on the point cloud.")
+    parser.add_argument("--zoom_in", type=float, default=1.0, help="Zoom in factor.")
     parser.add_argument("--cameras", action="store_true", help="Draw cameras.")
     parser.add_argument("--visible", action="store_true", help="Show the window.")
     parser.add_argument(
         "--quality", type=str, default="high", choices=["low", "high"], help="Quality of the movie."
     )
+    parser.add_argument("--initial_rotation", type=float, default=90, help="Initial rotation in x.")
     args = parser.parse_args()
 
     logging.basicConfig(
