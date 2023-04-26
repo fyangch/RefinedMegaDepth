@@ -85,7 +85,13 @@ class ColmapPipeline(Pipeline):
 
     def refinement(self) -> None:
         """Run refinement."""
-        pass
+        if not self.model_exists(ModelType.SPARSE):
+            raise ValueError("Sparse model does not exist. Cannot continue.")
+
+        os.makedirs(self.paths.refined_sparse, exist_ok=True)
+        self.refined_model: pycolmap.Reconstruction = self.sparse_model
+        self.refined_model.write(str(self.paths.refined_sparse))
+        logging.info(f"Refined model written to {self.paths.refined_sparse}")
 
     def mvs(self) -> None:
         """Run Multi-View Stereo."""
@@ -99,7 +105,7 @@ class ColmapPipeline(Pipeline):
         logging.info("Running undistort_images...")
         pycolmap.undistort_images(
             output_path=self.paths.dense,
-            input_path=self.paths.sparse,
+            input_path=self.paths.refined_sparse,
             image_path=self.paths.images,
             verbose=self.args.verbose,
         )
