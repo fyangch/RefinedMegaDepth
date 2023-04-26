@@ -1,5 +1,7 @@
 """Script to create comparisions between megadepth and our depth maps."""
+import argparse
 import glob
+import logging
 import os
 
 import h5py
@@ -110,116 +112,126 @@ def load(file_path):
 paths = glob.glob(get_our_raw_depth_map_path("*", "*"), recursive=True)
 img_names = list(map(get_img_name, paths))
 
-# enumerate all scenes that have a dense reconstruction
-scene = "0229"
 
-paths_raw = glob.glob(get_our_raw_depth_map_path(scene, "*"), recursive=True)
-names_raw = set(map(get_img_name, paths_raw))
-paths_filt = glob.glob(get_our_filtered_depth_map_path(scene, "*"), recursive=True)
-names_filt = set(map(get_img_name, paths_filt))
-paths_mega = glob.glob(get_mega_depth_map_path(scene, "*"), recursive=True)
-names_mega = set(map(get_img_name, paths_mega))
+def main(scene="0229", output_path="./plots", n_samples=10):
+    """Process a scene."""
+    paths_raw = glob.glob(get_our_raw_depth_map_path(scene, "*"), recursive=True)
+    names_raw = set(map(get_img_name, paths_raw))
+    paths_filt = glob.glob(get_our_filtered_depth_map_path(scene, "*"), recursive=True)
+    names_filt = set(map(get_img_name, paths_filt))
+    paths_mega = glob.glob(get_mega_depth_map_path(scene, "*"), recursive=True)
+    names_mega = set(map(get_img_name, paths_mega))
 
-print("raw, filtered, mega: ", len(names_raw), len(names_filt), len(names_mega))
+    print("raw, filtered, mega: ", len(names_raw), len(names_filt), len(names_mega))
+
+    difference_filt = names_raw.difference(names_filt)
+    difference_mega = names_filt.difference(names_mega)
+    intersecion = names_raw.intersection(names_filt).intersection(names_mega)
+    print(len(difference_filt), len(difference_mega), len(intersecion))
+
+    intersection_names = list(intersecion)
+    pixel_count = np.zeros(len(intersecion))
+    pixel_count_mega = np.zeros(len(intersecion))
+    coverage_raw = np.zeros(len(intersecion))
+    coverage_filt = np.zeros(len(intersecion))
+    coverage_mega = np.zeros(len(intersecion))
+
+    for i, name in enumerate(tqdm(intersection_names)):
+        depth_raw = load(get_our_raw_depth_map_path(scene, name))
+        depth_filt = load(get_our_filtered_depth_map_path(scene, name))
+        depth_mega = load(get_mega_depth_map_path(scene, name))
+        coverage_raw[i] = np.count_nonzero(depth_raw)
+        coverage_filt[i] = np.count_nonzero(depth_filt)
+        coverage_mega[i] = np.count_nonzero(depth_mega)
+        pixel_count[i] = depth_raw.size
+        pixel_count_mega = depth_mega.size
+
+    coverage_raw /= pixel_count
+    coverage_filt /= pixel_count
+    coverage_mega /= pixel_count_mega
+
+    # cherry picking
+    cherry_boxes = [
+        np.argsort(coverage_filt)[:n_samples],
+        np.argsort(coverage_mega)[:n_samples],
+        np.argsort(coverage_filt - coverage_mega)[:n_samples],
+        np.argsort(coverage_mega - coverage_filt)[:n_samples],
+        np.random.permutation(len(intersecion))[:n_samples],
+    ]
+    boxes = [
+        "best_filtered",
+        "best_mega",
+        "best_improvement",
+        "worst_improvement",
+        "random_selection",
+    ]
+
+    for cherries, box in zip(cherry_boxes, boxes):
+        for cherry in cherries:
+            img_name = intersection_names[cherry]
+            img = load(get_image_path(scene, img_name))
+            depth_raw = load(get_our_raw_depth_map_path(scene, img_name))
+            depth_filt = load(get_our_filtered_depth_map_path(scene, img_name))
+            depth_mega = load(get_mega_depth_map_path(scene, img_name))
+            plot_images(
+                [img, depth_raw, depth_filt, depth_mega],
+                ["Image", "Raw", "Filtered", "Megadepth"],
+                path=f"{output_path}/{scene}_{img_name}_comp_{box}.jpg",
+            )
+
+    fig = plt.figure(figsize=(15, 15))
+    plt.xlabel("raw")
+    plt.ylabel("mega")
+    plt.scatter(coverage_raw, coverage_mega)
+    fig.savefig(f"{output_path}/{scene}_raw_vs_mega.jpg", dpi=600, bbox_inches="tight")
+    plt.close(fig)
+
+    fig = plt.figure(figsize=(15, 15))
+    plt.xlabel("raw")
+    plt.ylabel("filtered")
+    plt.scatter(coverage_raw, coverage_filt)
+    fig.savefig(f"{output_path}/{scene}_raw_vs_filtered.jpg", dpi=600, bbox_inches="tight")
+    plt.close(fig)
+
+    fig = plt.figure(figsize=(15, 15))
+    plt.xlabel("filtered")
+    plt.ylabel("mega")
+    plt.scatter(coverage_filt, coverage_mega)
+    fig.savefig(f"{output_path}/{scene}_filtered_vs_mega.jpg", dpi=600, bbox_inches="tight")
+    plt.close(fig)
+
+    fig = plt.figure(figsize=(15, 15))
+    plt.xlabel("raw")
+    plt.ylabel("mega")
+    plt.scatter(coverage_raw, coverage_mega)
+    fig.savefig(f"{output_path}/{scene}_raw_vs_mega.jpg", dpi=600, bbox_inches="tight")
+    plt.close(fig)
+
+    fig = plt.figure(figsize=(15, 15))
+    plt.xlabel("raw")
+    plt.ylabel("filtered")
+    plt.scatter(coverage_raw, coverage_filt)
+    fig.savefig(f"{output_path}/{scene}_raw_vs_filtered.jpg", dpi=600, bbox_inches="tight")
+    plt.close(fig)
+
+    fig = plt.figure(figsize=(15, 15))
+    plt.title("Depth map coverage for same images")
+    plt.hist(coverage_raw, alpha=0.5)
+    plt.hist(coverage_filt, alpha=0.5)
+    plt.hist(coverage_mega, alpha=0.5)
+    plt.legend(["Raw", "Filtered", "MegaDepth"])
+    fig.savefig(f"{output_path}s/{scene}_histogram.jpg", dpi=600, bbox_inches="tight")
+    plt.close(fig)
 
 
-difference_filt = names_raw.difference(names_filt)
-difference_mega = names_filt.difference(names_mega)
-intersecion = names_raw.intersection(names_filt).intersection(names_mega)
-print(len(difference_filt), len(difference_mega), len(intersecion))
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--output_path", default=r"./plots", help="Where to put the plots")
+    parser.add_argument("--scene", default="0229", help="scene to process")
+    parser.add_argument("--n_samples", default=10, help="How many images")
 
-intersection_names = list(intersecion)
-pixel_count = np.zeros(len(intersecion))
-pixel_count_mega = np.zeros(len(intersecion))
-coverage_raw = np.zeros(len(intersecion))
-coverage_filt = np.zeros(len(intersecion))
-coverage_mega = np.zeros(len(intersecion))
+    args = parser.parse_args()
 
-for i, name in enumerate(tqdm(intersection_names)):
-    depth_raw = load(get_our_raw_depth_map_path(scene, name))
-    depth_filt = load(get_our_filtered_depth_map_path(scene, name))
-    depth_mega = load(get_mega_depth_map_path(scene, name))
-    coverage_raw[i] = np.count_nonzero(depth_raw)
-    coverage_filt[i] = np.count_nonzero(depth_filt)
-    coverage_mega[i] = np.count_nonzero(depth_mega)
-    pixel_count[i] = depth_raw.size
-    pixel_count_mega = depth_mega.size
+    logging.basicConfig(level=logging.DEBUG)
 
-coverage_raw /= pixel_count
-coverage_filt /= pixel_count
-coverage_mega /= pixel_count_mega
-
-
-# cherry picking
-cherry_boxes = [
-    np.argsort(coverage_filt)[:10],
-    np.argsort(coverage_mega)[:10],
-    np.argsort(coverage_filt - coverage_mega)[:10],
-    np.argsort(coverage_mega - coverage_filt)[:10],
-    np.random.permutation(len(intersecion))[:10],
-]
-boxes = [
-    "best_filtered",
-    "best_mega",
-    "best_improvement",
-    "worst_improvement",
-    "random_selection",
-]
-
-for cherries, box in zip(cherry_boxes, boxes):
-    for cherry in cherries:
-        img_name = intersection_names[cherry]
-        img = load(get_image_path(scene, img_name))
-        depth_raw = load(get_our_raw_depth_map_path(scene, img_name))
-        depth_filt = load(get_our_filtered_depth_map_path(scene, img_name))
-        depth_mega = load(get_mega_depth_map_path(scene, img_name))
-        plot_images(
-            [img, depth_raw, depth_filt, depth_mega],
-            ["Image", "Raw", "Filtered", "Megadepth"],
-            path=f"./plots/{scene}_{img_name}_comp_{box}.jpg",
-        )
-
-
-fig = plt.figure(figsize=(15, 15))
-plt.xlabel("raw")
-plt.ylabel("mega")
-plt.scatter(coverage_raw, coverage_mega)
-fig.savefig(f"./plots/{scene}_raw_vs_mega.jpg", dpi=600, bbox_inches="tight")
-plt.close(fig)
-
-fig = plt.figure(figsize=(15, 15))
-plt.xlabel("raw")
-plt.ylabel("filtered")
-plt.scatter(coverage_raw, coverage_filt)
-fig.savefig(f"./plots/{scene}_raw_vs_filtered.jpg", dpi=600, bbox_inches="tight")
-plt.close(fig)
-
-fig = plt.figure(figsize=(15, 15))
-plt.xlabel("filtered")
-plt.ylabel("mega")
-plt.scatter(coverage_filt, coverage_mega)
-fig.savefig(f"./plots/{scene}_filtered_vs_mega.jpg", dpi=600, bbox_inches="tight")
-plt.close(fig)
-
-fig = plt.figure(figsize=(15, 15))
-plt.xlabel("raw")
-plt.ylabel("mega")
-plt.scatter(coverage_raw, coverage_mega)
-fig.savefig(f"./plots/{scene}_raw_vs_mega.jpg", dpi=600, bbox_inches="tight")
-plt.close(fig)
-
-fig = plt.figure(figsize=(15, 15))
-plt.xlabel("raw")
-plt.ylabel("filtered")
-plt.scatter(coverage_raw, coverage_filt)
-fig.savefig(f"./plots/{scene}_raw_vs_filtered.jpg", dpi=600, bbox_inches="tight")
-plt.close(fig)
-
-fig = plt.figure(figsize=(15, 15))
-plt.title("Depth map coverage for same images")
-plt.hist(coverage_raw, alpha=0.5)
-plt.hist(coverage_filt, alpha=0.5)
-plt.hist(coverage_mega, alpha=0.5)
-plt.legend(["Raw", "Filtered", "MegaDepth"])
-fig.savefig(f"./plots/{scene}_histogram.jpg", dpi=600, bbox_inches="tight")
-plt.close(fig)
+    main(scene=args.scene, output_path=args.output_path, n_samples=args.n_samples)
