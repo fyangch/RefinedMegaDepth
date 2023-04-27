@@ -5,10 +5,25 @@ from skimage.measure import label
 
 from megadepth.postprocessing.image_processing import disk_r4, remove_small_components
 
-background_labels = np.array([0, 1, 25, 48, 61, 84, 42, 16])
-removal_labels = np.array(
-    [2, 20, 80, 102, 83, 76, 103, 36, 134, 136, 87, 100, 144, 149, 43, 93, 8, 115, 21, 26, 60, 128]
-)
+background_labels = [0, 1, 16, 25, 42, 48, 61, 84]
+foreground_labels = [8, 19, 30, 36, 43, 87, 93, 100, 115, 134, 136, 144, 149]
+transportation_labels = [20, 76, 80, 83, 102, 103, 127]
+water_labels = [21, 26, 60, 128]
+
+mask_type_to_labels = {
+    "background": background_labels,
+    "foreground": foreground_labels,
+    "sky": [2],
+    "removal": [2] + foreground_labels + transportation_labels + water_labels,
+    "transportation": transportation_labels,
+    "water": water_labels,
+    "tree": [4],
+    "plant": [17],
+    "human": [12],
+    "animal": [126],
+    "fountain": [104],
+    "sculpture": [132],
+}
 
 
 def get_mask(segmentation_map: np.ndarray, mask_type: str) -> np.ndarray:
@@ -21,27 +36,15 @@ def get_mask(segmentation_map: np.ndarray, mask_type: str) -> np.ndarray:
     Returns:
         np.ndarray: Mask with the same shape as the segmentation map.
     """
-    if mask_type == "background":
-        mask = np.in1d(segmentation_map, background_labels)
-        return np.reshape(mask, segmentation_map.shape)
-    elif mask_type == "removal":
-        mask = np.in1d(segmentation_map, removal_labels)
-        return np.reshape(mask, segmentation_map.shape)
-    elif mask_type == "sky":
-        return segmentation_map == 2
-    elif mask_type == "tree":
-        return segmentation_map == 4
-    elif mask_type == "plant":
-        return segmentation_map == 17
-    elif mask_type == "creature":
-        mask = np.in1d(segmentation_map, np.array([12, 126]))
-        return np.reshape(mask, segmentation_map.shape)
-    elif mask_type == "fountain":
-        return segmentation_map == 104
-    elif mask_type == "sculpture":
-        return segmentation_map == 132
-    else:
+    if mask_type not in mask_type_to_labels:
         raise ValueError(f"Invalid mask type: {mask_type}")
+
+    labels = mask_type_to_labels[mask_type]
+    if len(labels) == 1:
+        return segmentation_map == labels[0]
+    else:
+        mask = np.in1d(segmentation_map, labels)
+        return np.reshape(mask, segmentation_map.shape)
 
 
 def apply_semantic_filtering(
@@ -60,7 +63,7 @@ def apply_semantic_filtering(
         np.ndarray: Filtered depth map.
     """
     # check connected components of different types of foreground masks
-    for mask_type in ["tree", "plant", "creature", "fountain", "sculpture"]:
+    for mask_type in ["tree", "plant", "human", "animal", "fountain", "sculpture"]:
         # get connected components from the current mask
         mask = get_mask(segmentation_map, mask_type)
         labeled_mask, num_components = label(mask, background=0, connectivity=2, return_num=True)
@@ -133,7 +136,8 @@ def get_ordinal_map(
     """
     ordinal_map = np.zeros_like(depth_map)
 
-    # TODO: Check each foreground component
+    # check each component of each foreground mask
+    # TODO
 
     # create mask for depth values that are large enough
     valid_depths = depth_map[depth_map > 0.0]
