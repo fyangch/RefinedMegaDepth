@@ -56,6 +56,31 @@ def median_filter(img: np.ndarray, kernel_size: int) -> np.ndarray:
     return np.nanmedian(IPc, axis=(2, 3))
 
 
+def remove_small_components(depth_map: np.ndarray, n_pixels: int) -> np.ndarray:
+    """Remove small connected components from the depth map.
+
+    Args:
+        depth_map (np.ndarray): Depth map.
+        n_pixels (int): Connected components with less pixels will be removed.
+
+    Returns:
+        np.ndarray: Depth map without small connected components.
+    """
+    # binary mask of the depth map
+    mask = (depth_map > 0.0).astype(np.uint8)
+
+    # check each connected component
+    labeled_mask, num_components = label(mask, background=0, connectivity=2, return_num=True)
+    for i in range(1, num_components + 1):
+        component_mask = labeled_mask == i
+        component_size = np.count_nonzero(component_mask)
+
+        if component_size < n_pixels:
+            depth_map[component_mask] = 0.0
+
+    return depth_map
+
+
 def filter_unstable_depths(
     depth_map: np.ndarray,
     kernel_size: int = 5,
@@ -101,11 +126,6 @@ def erode_and_remove(depth_map: np.ndarray, n_pixels: int = 200) -> np.ndarray:
     mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, disk_r2)
     mask = cv2.morphologyEx(mask, cv2.MORPH_ERODE, disk_r4)
 
-    # remove small connected components
-    labeled_mask, num_components = label(mask, background=0, connectivity=2, return_num=True)
-    for i in range(1, num_components + 1):
-        component_size = labeled_mask[labeled_mask == i].size
-        if component_size < n_pixels:
-            depth_map[labeled_mask == i] = 0.0
+    depth_map = remove_small_components(depth_map, n_pixels)
 
     return depth_map * (mask == 1)

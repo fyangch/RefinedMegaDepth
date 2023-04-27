@@ -3,9 +3,9 @@ import cv2
 import numpy as np
 from skimage.measure import label
 
-from megadepth.postprocessing.image_processing import disk_r4
+from megadepth.postprocessing.image_processing import disk_r4, remove_small_components
 
-background_labels = np.array([1, 25, 48, 68, 84, 113, 16])
+background_labels = np.array([0, 1, 25, 48, 61, 84, 42, 16])
 removal_labels = np.array(
     [2, 20, 80, 102, 83, 76, 103, 36, 134, 136, 87, 100, 144, 149, 43, 93, 8, 115, 21, 26, 60, 128]
 )
@@ -111,6 +111,7 @@ def get_ordinal_map(
     min_fg_fraction: float = 0.05,
     min_bg_fraction: float = 0.05,
     depth_quantile: float = 0.75,
+    n_pixels: int = 1000,
 ) -> np.ndarray:
     """Return an ordinal map given the depth map and the segmentation map.
 
@@ -125,12 +126,35 @@ def get_ordinal_map(
             the image to be included in the ordinal map. Defaults to 0.05.
         depth_quantile (float, optional): A background pixel needs to have a depth value larger than
             this quantile over all valid depths to be included in the ordinal map. Defaults to 0.75.
+        n_pixels (int): Connected components with less pixels will be removed. Defaults to 1000.
 
     Returns:
         np.ndarray: Ordinal map.
     """
+    ordinal_map = np.zeros_like(depth_map)
+
     # TODO: Check each foreground component
 
-    # TODO: Check each background component
+    # create mask for depth values that are large enough
+    valid_depths = depth_map[depth_map > 0.0]
+    depth_mask = depth_map >= np.quantile(valid_depths, depth_quantile)
 
-    return
+    # check each background component
+    background_mask = get_mask(segmentation_map, "background").astype(np.uint8)
+    labeled_mask, num_components = label(
+        background_mask, background=0, connectivity=2, return_num=True
+    )
+    for i in range(1, num_components + 1):
+        # check size of current component
+        component_mask = labeled_mask == i
+        component_size = np.count_nonzero(component_mask)
+        if float(component_size) / depth_map.size < min_bg_fraction:
+            continue
+
+        # add component pixels to the ordinal map if the corresponding depths are large enough
+        combined_mask = component_mask & depth_mask
+        ordinal_map[combined_mask] = bg_label
+
+    ordinal_map = remove_small_components(ordinal_map, n_pixels)
+
+    return ordinal_map
