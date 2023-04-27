@@ -1,7 +1,6 @@
 """This is a re-implementation of the MegaDepth postprocessing steps."""
 
 import os
-import shutil
 from pathlib import Path
 
 import numpy as np
@@ -11,7 +10,7 @@ from tqdm import tqdm
 from megadepth.postprocessing.image_processing import erode_and_remove, filter_unstable_depths
 from megadepth.postprocessing.semantic_filtering import (
     apply_semantic_filtering,
-    get_ordinal_labels,
+    get_ordinal_map,
     is_selfie_image,
 )
 from megadepth.postprocessing.semantic_segmentation import (
@@ -26,16 +25,17 @@ def refine_depth_maps(
     depth_map_dir: Path,
     output_dir: Path,
 ) -> None:
-    """Refine the depth maps.
+    """Refine the depth maps and save the final depth maps, ordinal maps and segmentation maps.
 
     Args:
         image_dir (Path): Path to the directory that contains the undistorted RGB images.
         depth_map_dir (Path): Path to the directory that contains the raw depth maps.
         output_dir (Path): Path to the output directory.
     """
-    # create subdirectories for the final depth maps and undistorted images
+    # create subdirectories for the refined depth maps, ordinal maps and segmentation maps
     os.makedirs(output_dir / "depth_maps", exist_ok=True)
-    os.makedirs(output_dir / "images", exist_ok=True)
+    os.makedirs(output_dir / "ordinal_maps", exist_ok=True)
+    os.makedirs(output_dir / "segmentation_maps", exist_ok=True)
 
     model = get_segmentation_model()
 
@@ -49,13 +49,14 @@ def refine_depth_maps(
         depth_map = apply_semantic_filtering(depth_map, segmentation_map)
         depth_map = erode_and_remove(depth_map)
 
-        # TODO: finish ordinal labeling
+        # TODO: consider saving both depth and ordinal maps for some images
         if is_selfie_image(depth_map, segmentation_map):
-            _ = get_ordinal_labels()
+            ordinal_map = get_ordinal_map(depth_map, segmentation_map)
+            with open(output_dir / "ordinal_maps" / f"{image_fn}.npy", "wb") as f:
+                np.save(f, ordinal_map)
+        else:
+            with open(output_dir / "depth_maps" / f"{image_fn}.npy", "wb") as f:
+                np.save(f, depth_map)
 
-        # copy undistorted image to results directory
-        shutil.copy(image_dir / image_fn, output_dir / "images" / image_fn)
-
-        # save refined depth map
-        with open(output_dir / "depth_maps" / f"{image_fn}.npy", "wb") as f:
-            np.save(f, depth_map)
+        with open(output_dir / "segmentation_maps" / f"{image_fn}.npy", "wb") as f:
+            np.save(f, segmentation_map)

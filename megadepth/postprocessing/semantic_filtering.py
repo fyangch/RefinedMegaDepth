@@ -71,7 +71,7 @@ def apply_semantic_filtering(
             depth_vector = depth_map[labeled_mask == i]
             fraction = np.count_nonzero(depth_vector) / depth_vector.size
 
-            # set depth values to 0 if the fraction is smaller than 0.5
+            # set depth values to 0 if the fraction is smaller than the threshold
             if fraction < threshold:
                 depth_map[labeled_mask == i] = 0.0
 
@@ -81,28 +81,56 @@ def apply_semantic_filtering(
     return depth_map * (removal_mask == 0)
 
 
-def is_selfie_image(depth_map: np.ndarray, segmentation_map: np.ndarray, threshold=0.35) -> bool:
-    """Check if the image is a selfie image.
-
-    Returns True if depth coverage is bigger than threshold.
-    for scenes [168, 229, 212, 768] they use 0.2 as threshold.
+def is_selfie_image(
+    depth_map: np.ndarray, segmentation_map: np.ndarray, threshold: float = 0.35
+) -> bool:
+    """Check if the image is a "selfie image".
 
     Args:
-        depth_map (np.ndarray): The depth map.
-        segmentation_map (np.ndarray): The predicted segmentation map.
+        depth_map (np.ndarray): Depth map.
+        segmentation_map (np.ndarray): Predicted segmentation map.
+        threshold (float, optional): Threshold for the selfie criterion. Defaults to 0.35.
 
     Returns:
-        bool: True if the image is a selfie image, False otherwise.
+        bool: True if the image is a selfie image and False otherwise.
     """
-    # ignore sky
+    # get all depth values that don't belong to the sky region
     sky_mask = get_mask(segmentation_map, "sky")
-    num_valid = np.count_nonzero(sky_mask != 0)
-    num_valid_depth = np.count_nonzero(depth_map)
-    return num_valid > threshold * num_valid_depth
+    depth_values = depth_map[np.logical_not(sky_mask)]
+
+    # check if the fraction of valid depths among the non-sky depths is smaller than the threshold
+    num_valid = np.count_nonzero(depth_values)
+    return num_valid < threshold * depth_values.size  # avoid division by 0....
 
 
-# not sure yet about this step
-def get_ordinal_labels():
-    """Get the ordinal labels."""
-    # TODO
+def get_ordinal_map(
+    depth_map: np.ndarray,
+    segmentation_map: np.ndarray,
+    fg_label: int = 1,
+    bg_label: int = 2,
+    min_fg_fraction: float = 0.05,
+    min_bg_fraction: float = 0.05,
+    depth_quantile: float = 0.75,
+) -> np.ndarray:
+    """Return an ordinal map given the depth map and the segmentation map.
+
+    Args:
+        depth_map (np.ndarray): Depth map.
+        segmentation_map (np.ndarray): Predicted segmentation map.
+        fg_label (int, optional): Foreground label in the ordinal map. Defaults to 1.
+        bg_label (int, optional): Background label in the ordinal map. Defaults to 2.
+        min_fg_fraction (float, optional): Foreground components need to occupy a larger fraction of
+            the image to be included in the ordinal map. Defaults to 0.05.
+        min_bg_fraction (float, optional): Background components need to occupy a larger fraction of
+            the image to be included in the ordinal map. Defaults to 0.05.
+        depth_quantile (float, optional): A background pixel needs to have a depth value larger than
+            this quantile over all valid depths to be included in the ordinal map. Defaults to 0.75.
+
+    Returns:
+        np.ndarray: Ordinal map.
+    """
+    # TODO: Check each foreground component
+
+    # TODO: Check each background component
+
     return
