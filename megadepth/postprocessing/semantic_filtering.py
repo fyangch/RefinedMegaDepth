@@ -137,14 +137,28 @@ def get_ordinal_map(
     ordinal_map = np.zeros_like(depth_map)
 
     # check each component of each foreground mask
-    # TODO
+    for mask_type in ["human", "animal", "sculpture", "transportation", "fountain", "foreground"]:
+        # get connected components from the current mask
+        foreground_mask = get_mask(segmentation_map, mask_type)
+        labeled_mask, num_components = label(
+            foreground_mask, background=0, connectivity=2, return_num=True
+        )
+        for i in range(1, num_components + 1):
+            # check size of current component
+            component_mask = labeled_mask == i
+            component_size = np.count_nonzero(component_mask)
+            if float(component_size) / depth_map.size < min_fg_fraction:
+                continue
+
+            # add component pixels to the ordinal map
+            ordinal_map[component_mask] = fg_label
 
     # create mask for depth values that are large enough
     valid_depths = depth_map[depth_map > 0.0]
     depth_mask = depth_map >= np.quantile(valid_depths, depth_quantile)
 
     # check each background component
-    background_mask = get_mask(segmentation_map, "background").astype(np.uint8)
+    background_mask = get_mask(segmentation_map, "background")
     labeled_mask, num_components = label(
         background_mask, background=0, connectivity=2, return_num=True
     )
@@ -159,6 +173,6 @@ def get_ordinal_map(
         combined_mask = component_mask & depth_mask
         ordinal_map[combined_mask] = bg_label
 
+    # clean up final ordinal map
     ordinal_map = remove_small_components(ordinal_map, n_pixels)
-
     return ordinal_map
