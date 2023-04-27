@@ -85,14 +85,14 @@ def apply_semantic_filtering(
 
 
 def is_selfie_image(
-    depth_map: np.ndarray, segmentation_map: np.ndarray, threshold: float = 0.35
+    depth_map: np.ndarray, segmentation_map: np.ndarray, threshold: float = 0.3
 ) -> bool:
     """Check if the image is a "selfie image".
 
     Args:
         depth_map (np.ndarray): Depth map.
         segmentation_map (np.ndarray): Predicted segmentation map.
-        threshold (float, optional): Threshold for the selfie criterion. Defaults to 0.35.
+        threshold (float, optional): Threshold for the selfie criterion. Defaults to 0.3.
 
     Returns:
         bool: True if the image is a selfie image and False otherwise.
