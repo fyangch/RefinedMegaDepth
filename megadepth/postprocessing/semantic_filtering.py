@@ -155,6 +155,8 @@ def get_ordinal_map(
 
     # create mask for depth values that are large enough
     valid_depths = depth_map[depth_map > 0.0]
+    if valid_depths.size == 0:
+        return np.zeros_like(depth_map)
     depth_mask = depth_map >= np.quantile(valid_depths, depth_quantile)
 
     # check each background component
