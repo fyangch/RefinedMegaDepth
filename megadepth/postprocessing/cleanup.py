@@ -13,10 +13,7 @@ from megadepth.postprocessing.semantic_filtering import (
     get_ordinal_map,
     is_selfie_image,
 )
-from megadepth.postprocessing.semantic_segmentation import (
-    get_segmentation_map,
-    get_segmentation_model,
-)
+from megadepth.postprocessing.semantic_segmentation import get_segmentation_model
 from megadepth.utils.io import load_depth_map
 
 
@@ -24,6 +21,7 @@ def refine_depth_maps(
     image_dir: Path,
     depth_map_dir: Path,
     output_dir: Path,
+    segmentation_model: str = "hrnet",
 ) -> None:
     """Refine the depth maps and save the final depth maps, ordinal maps and segmentation maps.
 
@@ -31,19 +29,20 @@ def refine_depth_maps(
         image_dir (Path): Path to the directory that contains the undistorted RGB images.
         depth_map_dir (Path): Path to the directory that contains the raw depth maps.
         output_dir (Path): Path to the output directory.
+        segmentation_model (str): Which segmentation model to use. Defaults to "hrnet".
     """
     # create subdirectories for the refined depth maps, ordinal maps and segmentation maps
     os.makedirs(output_dir / "depth_maps", exist_ok=True)
     os.makedirs(output_dir / "ordinal_maps", exist_ok=True)
     os.makedirs(output_dir / "segmentation_maps", exist_ok=True)
 
-    model = get_segmentation_model()
+    model = get_segmentation_model(segmentation_model)
 
     for image_fn in tqdm(os.listdir(image_dir)):
         image = Image.open(image_dir / image_fn).convert("RGB")
         depth_map = load_depth_map(os.path.join(depth_map_dir, f"{image_fn}.geometric.bin"))
 
-        segmentation_map = get_segmentation_map(image, model)
+        segmentation_map = model.get_segmentation_map(image)
 
         depth_map = filter_unstable_depths(depth_map)
         depth_map = apply_semantic_filtering(depth_map, segmentation_map)
