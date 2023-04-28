@@ -8,11 +8,7 @@ from PIL import Image
 from tqdm import tqdm
 
 from megadepth.postprocessing.image_processing import erode_and_remove, filter_unstable_depths
-from megadepth.postprocessing.semantic_filtering import (
-    apply_semantic_filtering,
-    get_ordinal_map,
-    is_selfie_image,
-)
+from megadepth.postprocessing.semantic_filtering import apply_semantic_filtering, get_ordinal_map
 from megadepth.postprocessing.semantic_segmentation import get_segmentation_model
 from megadepth.utils.io import load_depth_map
 
@@ -48,14 +44,11 @@ def refine_depth_maps(
         depth_map = apply_semantic_filtering(depth_map, segmentation_map)
         depth_map = erode_and_remove(depth_map)
 
-        # TODO: consider saving both depth and ordinal maps for some images
-        if is_selfie_image(depth_map, segmentation_map):
-            ordinal_map = get_ordinal_map(depth_map, segmentation_map)
-            with open(output_dir / "ordinal_maps" / f"{image_fn}.npy", "wb") as f:
-                np.save(f, ordinal_map)
-        else:
-            with open(output_dir / "depth_maps" / f"{image_fn}.npy", "wb") as f:
-                np.save(f, depth_map)
+        ordinal_map = get_ordinal_map(depth_map, segmentation_map)
 
+        with open(output_dir / "ordinal_maps" / f"{image_fn}.npy", "wb") as f:
+            np.save(f, ordinal_map)
+        with open(output_dir / "depth_maps" / f"{image_fn}.npy", "wb") as f:
+            np.save(f, depth_map)
         with open(output_dir / "segmentation_maps" / f"{image_fn}.npy", "wb") as f:
             np.save(f, segmentation_map)
