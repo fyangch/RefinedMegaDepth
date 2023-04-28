@@ -2,7 +2,6 @@
 
 import os
 from pathlib import Path
-from typing import Literal
 
 import numpy as np
 from PIL import Image
@@ -22,7 +21,7 @@ def refine_depth_maps(
     image_dir: Path,
     depth_map_dir: Path,
     output_dir: Path,
-    segmentation_model: Literal["hrnet", "beit"] = "beit",
+    segmentation_model: str = "hrnet",
 ) -> None:
     """Refine the depth maps and save the final depth maps, ordinal maps and segmentation maps.
 
@@ -30,7 +29,7 @@ def refine_depth_maps(
         image_dir (Path): Path to the directory that contains the undistorted RGB images.
         depth_map_dir (Path): Path to the directory that contains the raw depth maps.
         output_dir (Path): Path to the output directory.
-        segmentation_model (Literal["hrnet", "beit"]): Which model to use. Defaults to "beit".
+        segmentation_model (str): Which segmentation model to use. Defaults to "hrnet".
     """
     # create subdirectories for the refined depth maps, ordinal maps and segmentation maps
     os.makedirs(output_dir / "depth_maps", exist_ok=True)

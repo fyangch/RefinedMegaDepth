@@ -1,7 +1,6 @@
 """Functions that implement the semantic segmentation steps for the cleanup.."""
 import os
 from abc import abstractmethod
-from typing import Literal
 from urllib.request import urlretrieve
 
 import cv2
@@ -10,7 +9,12 @@ import PIL
 import torch
 from mit_semseg.models import ModelBuilder, SegmentationModule
 from torchvision import transforms
-from transformers import BeitForSemanticSegmentation, BeitImageProcessor
+from transformers import (
+    BeitForSemanticSegmentation,
+    BeitImageProcessor,
+    SegformerForSemanticSegmentation,
+    SegformerImageProcessor,
+)
 
 
 class SegmentationModel:
@@ -117,20 +121,32 @@ class HRNet(SegmentationModel):
         return cv2.resize(segmentation_map, dsize=original_size, interpolation=cv2.INTER_NEAREST)
 
 
-class BEiT(SegmentationModel):
-    """BEiT segmentation model.
+class VisionTransformer(SegmentationModel):
+    """Transformer-based segmentation models.
 
-    More information: https://huggingface.co/microsoft/beit-base-finetuned-ade-640-640
+    More information:
+        - https://huggingface.co/microsoft/beit-base-finetuned-ade-640-640
+        - https://huggingface.co/nvidia/segformer-b5-finetuned-ade-640-640
     """
 
-    def __init__(self) -> None:
+    def __init__(self, model: str) -> None:
         """Initialize the model."""
-        self.image_processor = BeitImageProcessor.from_pretrained(
-            "microsoft/beit-base-finetuned-ade-640-640"
-        )
-        self.model = BeitForSemanticSegmentation.from_pretrained(
-            "microsoft/beit-base-finetuned-ade-640-640"
-        )
+        if model == "beit":
+            self.image_processor = BeitImageProcessor.from_pretrained(
+                "microsoft/beit-base-finetuned-ade-640-640"
+            )
+            self.model = BeitForSemanticSegmentation.from_pretrained(
+                "microsoft/beit-base-finetuned-ade-640-640"
+            )
+        elif model == "segformer":
+            self.image_processor = SegformerImageProcessor.from_pretrained(
+                "nvidia/segformer-b5-finetuned-ade-640-640"
+            )
+            self.model = SegformerForSemanticSegmentation.from_pretrained(
+                "nvidia/segformer-b5-finetuned-ade-640-640"
+            )
+        else:
+            raise ValueError(f"Invalid segmentation model: {model}")
 
         self.model.eval()
         if torch.cuda.is_available():
@@ -151,19 +167,19 @@ class BEiT(SegmentationModel):
 
         with torch.no_grad():
             logits = self.model(input).logits
-        logits = torch.nn.functional.interpolate(logits, size=image.size[::-1], mode="bilinear")
+        logits = torch.nn.functional.interpolate(
+            logits, size=image.size[::-1], mode="bilinear", align_corners=False
+        )
 
         _, pred = torch.max(logits, dim=1)
         return pred.cpu()[0].numpy().astype(np.uint8)
 
 
-def get_segmentation_model(
-    model: Literal["hrnet", "beit"], max_size: int = 1024
-) -> SegmentationModel:
+def get_segmentation_model(model: str, max_size: int = 1024) -> SegmentationModel:
     """Return the HRNetV2 or BEiT segmentation model (pre-trained on MIT ADE20K).
 
     Args:
-        model (Literal["hrnet", "beit"]): Which model to return.
+        model (str): Which segmentation model to return.
         max_size (int, optional): Maximum width/height for the segmentation. Defaults to 1024.
 
     Returns:
@@ -171,7 +187,7 @@ def get_segmentation_model(
     """
     if model == "hrnet":
         return HRNet(max_size)
-    elif model == "beit":
-        return BEiT()
+    elif model in ["beit", "segformer"]:
+        return VisionTransformer(model)
     else:
         raise ValueError(f"Invalid segmentation model: {model}")
