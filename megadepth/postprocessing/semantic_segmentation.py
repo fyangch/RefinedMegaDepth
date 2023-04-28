@@ -163,7 +163,7 @@ class VisionTransformer(SegmentationModel):
         """
         input = self.image_processor(image, return_tensors="pt").pixel_values
         if torch.cuda.is_available():
-            input.cuda()
+            input = input.cuda()
 
         with torch.no_grad():
             logits = self.model(input).logits
