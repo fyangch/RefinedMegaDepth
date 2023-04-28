@@ -10,6 +10,7 @@ import PIL
 import torch
 from mit_semseg.models import ModelBuilder, SegmentationModule
 from torchvision import transforms
+from transformers import BeitForSemanticSegmentation, BeitImageProcessor
 
 
 class SegmentationModel:
@@ -31,7 +32,7 @@ class SegmentationModel:
 class HRNet(SegmentationModel):
     """HRNetV2 segmentation model.
 
-    More information about the model: https://github.com/CSAILVision/semantic-segmentation-pytorch
+    More information: https://github.com/CSAILVision/semantic-segmentation-pytorch
     """
 
     # pre-trained model weights
@@ -116,6 +117,46 @@ class HRNet(SegmentationModel):
         return cv2.resize(segmentation_map, dsize=original_size, interpolation=cv2.INTER_NEAREST)
 
 
+class BEiT(SegmentationModel):
+    """BEiT segmentation model.
+
+    More information: https://huggingface.co/microsoft/beit-base-finetuned-ade-640-640
+    """
+
+    def __init__(self) -> None:
+        """Initialize the model."""
+        self.image_processor = BeitImageProcessor.from_pretrained(
+            "microsoft/beit-base-finetuned-ade-640-640"
+        )
+        self.model = BeitForSemanticSegmentation.from_pretrained(
+            "microsoft/beit-base-finetuned-ade-640-640"
+        )
+
+        self.model.eval()
+        if torch.cuda.is_available():
+            self.model.cuda()
+
+    def get_segmentation_map(self, image: PIL.Image) -> np.ndarray:
+        """Extract the segmentation map from the image.
+
+        Args:
+            image (PIL.Image): Undistorted image.
+
+        Returns:
+            np.ndarray: Predicted segmentation map with the original image size.
+        """
+        input = self.image_processor(image, return_tensors="pt").pixel_values
+        if torch.cuda.is_available():
+            input.cuda()
+
+        with torch.no_grad():
+            logits = self.model(input).logits
+        logits = torch.nn.functional.interpolate(logits, size=image.size[::-1], mode="bilinear")
+
+        _, pred = torch.max(logits, dim=1)
+        return pred.cpu()[0].numpy().astype(np.uint8)
+
+
 def get_segmentation_model(
     model: Literal["hrnet", "beit"], max_size: int = 1024
 ) -> SegmentationModel:
@@ -131,6 +172,6 @@ def get_segmentation_model(
     if model == "hrnet":
         return HRNet(max_size)
     elif model == "beit":
-        raise NotImplementedError()
+        return BEiT()
     else:
         raise ValueError(f"Invalid segmentation model: {model}")
