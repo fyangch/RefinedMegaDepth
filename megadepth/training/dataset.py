@@ -1,6 +1,7 @@
 """Dataset definition."""
 import glob
 
+import numpy as np
 import torch
 
 from megadepth.utils.io import load
@@ -68,11 +69,12 @@ class DepthDataset:
     def __getitem__(self, idx):
         """Get Image and Label."""
         image = load(self.img_list[idx])
-        image = torch.tensor(image)
+        image = torch.tensor(np.array(image), dtype=float)
+        image = image.permute((0, 3, 1, 2))
         image = image.unsqueeze(0)  # ahape -> [1,3,h,w]
 
         depth = load(self.depth_list[idx])
-        depth = torch.tensor(depth)
+        depth = torch.tensor(depth, dtype=float)
         depth = depth.unsqueeze(0).unsqueeze(0)  # shape -> [1,1,h,w]
 
         # stack = torch.stack((image, depth),axis=0)
