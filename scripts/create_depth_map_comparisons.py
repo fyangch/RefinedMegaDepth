@@ -40,23 +40,25 @@ def plot_images(images: list, titles: list, path=None) -> None:
     plt.close(fig)
 
 
-def plot_image_overlay(images: list, titles: list, path=None) -> None:
+def plot_image_overlay(images: list, depths: list, titles: list, path=None) -> None:
     """Plot image and depth maps with colormap from megadepth."""
     fig = plt.figure(figsize=(15, 15))
-    for i in range(1, len(images)):
-        img = np.array(images[i], float) / 255
+    for i in range(len(images)):
+        depth = np.array(depths[i], float) / 255
         fig.add_subplot(1, len(images), i + 1)
         plt.axis("off")
-        plt.title(titles[i - 1])
-        plt.imshow(images[0])
+        plt.title(titles[i])
+        plt.imshow(images[i])
 
-        amin, amax = np.quantile(img[img > 0], [0.01, 0.985])
+        amin, amax = np.quantile(depth[depth > 0], [0.01, 0.985])
         if amin == amax:  # if ordinal labels
-            amin, amax = 0, np.max(img)
-        img[img == 0] = np.nan
-        nan_mask = np.zeros_like(img)
-        nan_mask[~np.isnan(img)] = np.nan
-        plt.imshow(img, alpha=0.5, cmap="jet", norm=Normalize(amin, amax), interpolation="nearest")
+            amin, amax = 0, np.max(depth)
+        depth[depth == 0] = np.nan
+        nan_mask = np.zeros_like(depth)
+        nan_mask[~np.isnan(depth)] = np.nan
+        plt.imshow(
+            depth, alpha=0.5, cmap="jet", norm=Normalize(amin, amax), interpolation="nearest"
+        )
     if path is None:
         plt.show()
     else:
@@ -73,11 +75,19 @@ def get_all_dense_scenes():
     )
 
 
-def get_image_path(scene, img_name):
+def get_our_image_path(scene, img_name):
     """Compute path on cluster for given scene and image_name."""
     return (
         rf"/cluster/project/infk/courses/252-0579-00L/group01/scenes/{scene}/"
         rf"dense/superpoint_max-superglue-netvlad-50-KA+BA/images/{img_name}.jpg"
+    )
+
+
+def get_mega_image_path(scene, img_name):
+    """Compute path to image on cluster for given scene and image_name."""
+    return (
+        rf"/cluster/project/infk/courses/252-0579-00L/group01/"
+        rf"undistorted_md/phoenix/S6/zl548/MegaDepth_v1/{scene}/dense0/imgs/{img_name}.h5"
     )
 
 
@@ -194,17 +204,19 @@ def main(scene="0229", output_path="./plots", n_samples=10):
     for cherries, box in zip(cherry_boxes, boxes):
         for cherry in cherries:
             img_name = intersection_names[cherry]
-            img = load(get_image_path(scene, img_name))
+            our_img = load(get_our_image_path(scene, img_name))
+            mega_img = load(get_mega_image_path(scene, img_name))
             depth_raw = load(get_our_raw_depth_map_path(scene, img_name))
             depth_filt = load(get_our_filtered_depth_map_path(scene, img_name))
             depth_mega = load(get_mega_depth_map_path(scene, img_name))
             plot_images(
-                [img, depth_raw, depth_filt, depth_mega],
+                [our_img, depth_raw, depth_filt, depth_mega],
                 ["Image", "Raw", "Filtered", "Megadepth"],
                 path=f"{output_path}/{scene}_{img_name}_comp_{box}.jpg",
             )
             plot_image_overlay(
-                [img, depth_raw, depth_filt, depth_mega],
+                [our_img, our_img, mega_img],
+                [depth_raw, depth_filt, depth_mega],
                 ["Raw", "Filtered", "Megadepth"],
                 path=f"{output_path}/{scene}_{img_name}_overlay_{box}.jpg",
             )
