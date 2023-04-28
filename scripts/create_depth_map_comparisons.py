@@ -271,6 +271,17 @@ def main(scene="0229", output_path="./plots", n_samples=10):
     fig.savefig(f"{output_path}/{scene}_depth_coverage_histogram.jpg", dpi=600, bbox_inches="tight")
     plt.close(fig)
 
+    fig = plt.figure(figsize=(15, 15))
+    plt.title("Depth map coverage for same images")
+    plt.hist(coverage_raw[is_ordinal != 0], alpha=0.5, bins=100)
+    plt.hist(coverage_filt[is_ordinal != 0], alpha=0.5, bins=100)
+    plt.hist(coverage_mega[is_ordinal != 0], alpha=0.5, bins=100)
+    plt.legend(["Raw", "Filtered", "MegaDepth"])
+    fig.savefig(
+        f"{output_path}/{scene}_ordinal_coverage_histogram.jpg", dpi=600, bbox_inches="tight"
+    )
+    plt.close(fig)
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
