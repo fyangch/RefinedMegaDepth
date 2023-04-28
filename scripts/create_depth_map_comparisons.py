@@ -148,7 +148,7 @@ paths = glob.glob(get_our_raw_depth_map_path("*", "*"), recursive=True)
 img_names = list(map(get_img_name, paths))
 
 
-def main(scene="0229", output_path="./plots", n_samples=10):
+def main(scene="0229", output_path="./plots", n_samples=10, n_bins=50):
     """Process a scene."""
     paths_raw = glob.glob(get_our_raw_depth_map_path(scene, "*"), recursive=True)
     names_raw = set(map(get_img_name, paths_raw))
@@ -264,18 +264,18 @@ def main(scene="0229", output_path="./plots", n_samples=10):
 
     fig = plt.figure(figsize=(15, 15))
     plt.title("Depth map coverage for same images")
-    plt.hist(coverage_raw[is_ordinal == 0], alpha=0.5, bins=100)
-    plt.hist(coverage_filt[is_ordinal == 0], alpha=0.5, bins=100)
-    plt.hist(coverage_mega[is_ordinal == 0], alpha=0.5, bins=100)
+    plt.hist(coverage_raw[is_ordinal == 0], alpha=0.5, bins=n_bins)
+    plt.hist(coverage_filt[is_ordinal == 0], alpha=0.5, bins=n_bins)
+    plt.hist(coverage_mega[is_ordinal == 0], alpha=0.5, bins=n_bins)
     plt.legend(["Raw", "Filtered", "MegaDepth"])
     fig.savefig(f"{output_path}/{scene}_depth_coverage_histogram.jpg", dpi=600, bbox_inches="tight")
     plt.close(fig)
 
     fig = plt.figure(figsize=(15, 15))
-    plt.title("Depth map coverage for same images")
-    plt.hist(coverage_raw[is_ordinal != 0], alpha=0.5, bins=100)
-    plt.hist(coverage_filt[is_ordinal != 0], alpha=0.5, bins=100)
-    plt.hist(coverage_mega[is_ordinal != 0], alpha=0.5, bins=100)
+    plt.title("Ordinal label coverage for same images")
+    plt.hist(coverage_raw[is_ordinal != 0], alpha=0.5, bins=n_bins)
+    plt.hist(coverage_filt[is_ordinal != 0], alpha=0.5, bins=n_bins)
+    plt.hist(coverage_mega[is_ordinal != 0], alpha=0.5, bins=n_bins)
     plt.legend(["Raw", "Filtered", "MegaDepth"])
     fig.savefig(
         f"{output_path}/{scene}_ordinal_coverage_histogram.jpg", dpi=600, bbox_inches="tight"
@@ -288,9 +288,15 @@ if __name__ == "__main__":
     parser.add_argument("--output_path", default=r"./plots", help="Where to put the plots")
     parser.add_argument("--scene", default="0229", help="scene to process")
     parser.add_argument("--n_samples", default=10, help="How many images")
+    parser.add_argument("--n_bins", default=50, help="How many images")
 
     args = parser.parse_args()
 
     logging.basicConfig(level=logging.DEBUG)
 
-    main(scene=args.scene, output_path=args.output_path, n_samples=int(args.n_samples))
+    main(
+        scene=args.scene,
+        output_path=args.output_path,
+        n_samples=int(args.n_samples),
+        n_bins=int(args.n_bins),
+    )
