@@ -5,6 +5,7 @@ import os
 from pathlib import Path
 from typing import List
 
+import h5py
 import numpy as np
 from PIL import Image
 
@@ -42,6 +43,26 @@ def make_gif(store_path: str, movie_path: str):
     frame_one.save(
         movie_path, format="GIF", append_images=frames, save_all=True, duration=10, loop=0
     )
+
+
+def load(file_path):
+    """Load image file and depth maps."""
+    _, ext = os.path.splitext(file_path)
+    # print(ext)
+    if ext == ".npy":
+        return np.load(file_path)
+    if ext == ".h5":
+        with h5py.File(file_path, "r") as f:
+            # List all the keys in the file
+            # print("Keys: %s" % f.keys())
+            # Get the dataset
+            dataset = f["depth"]
+            # Get the data from the dataset
+            data = dataset[:]
+            return data
+    if ext == ".bin":
+        return load_depth_map(file_path)
+    return Image.open(file_path).convert("RGB")
 
 
 def load_depth_map(path: str) -> np.array:
