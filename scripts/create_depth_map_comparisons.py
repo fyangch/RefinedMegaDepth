@@ -87,7 +87,7 @@ def get_mega_image_path(scene, img_name):
     """Compute path to image on cluster for given scene and image_name."""
     return (
         rf"/cluster/project/infk/courses/252-0579-00L/group01/"
-        rf"undistorted_md/phoenix/S6/zl548/MegaDepth_v1/{scene}/dense0/imgs/{img_name}.h5"
+        rf"undistorted_md/phoenix/S6/zl548/MegaDepth_v1/{scene}/dense0/imgs/{img_name}.jpg"
     )
 
 
@@ -170,6 +170,7 @@ def main(scene="0229", output_path="./plots", n_samples=10):
     coverage_raw = np.zeros(len(intersecion))
     coverage_filt = np.zeros(len(intersecion))
     coverage_mega = np.zeros(len(intersecion))
+    is_ordinal = np.zeros(len(intersecion))
 
     for i, name in enumerate(tqdm(intersection_names)):
         depth_raw = load(get_our_raw_depth_map_path(scene, name))
@@ -178,6 +179,7 @@ def main(scene="0229", output_path="./plots", n_samples=10):
         coverage_raw[i] = np.count_nonzero(depth_raw)
         coverage_filt[i] = np.count_nonzero(depth_filt)
         coverage_mega[i] = np.count_nonzero(depth_mega)
+        is_ordinal[i] = len(np.unique(depth_mega)) > 5
         pixel_count[i] = depth_raw.size
         pixel_count_mega = depth_mega.size
 
@@ -185,12 +187,16 @@ def main(scene="0229", output_path="./plots", n_samples=10):
     coverage_filt /= pixel_count
     coverage_mega /= pixel_count_mega
 
+    n_ordinal = np.count_nonzero(is_ordinal)
+    percentage = 100.0 * n_ordinal / len(is_ordinal)
+    print(f"num ordinal depths = {n_ordinal} / {len(is_ordinal)} ({percentage:.2f}%)")
+
     # cherry picking
     cherry_boxes = [
-        np.argsort(coverage_filt)[:n_samples],
-        np.argsort(coverage_mega)[:n_samples],
-        np.argsort(coverage_filt - coverage_mega)[:n_samples],
-        np.argsort(coverage_mega - coverage_filt)[:n_samples],
+        np.argsort(-coverage_filt)[:n_samples],
+        np.argsort(-coverage_mega)[:n_samples],
+        np.argsort(-(coverage_filt - coverage_mega))[:n_samples],
+        np.argsort(-(coverage_mega - coverage_filt))[:n_samples],
         np.random.permutation(len(intersecion))[:n_samples],
     ]
     boxes = [
@@ -276,4 +282,4 @@ if __name__ == "__main__":
 
     logging.basicConfig(level=logging.DEBUG)
 
-    main(scene=args.scene, output_path=args.output_path, n_samples=args.n_samples)
+    main(scene=args.scene, output_path=args.output_path, n_samples=int(args.n_samples))
