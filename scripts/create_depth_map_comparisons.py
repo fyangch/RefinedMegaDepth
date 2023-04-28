@@ -264,11 +264,11 @@ def main(scene="0229", output_path="./plots", n_samples=10):
 
     fig = plt.figure(figsize=(15, 15))
     plt.title("Depth map coverage for same images")
-    plt.hist(coverage_raw, alpha=0.5)
-    plt.hist(coverage_filt, alpha=0.5)
-    plt.hist(coverage_mega, alpha=0.5)
+    plt.hist(coverage_raw[is_ordinal == 0], alpha=0.5, bins=100)
+    plt.hist(coverage_filt[is_ordinal == 0], alpha=0.5, bins=100)
+    plt.hist(coverage_mega[is_ordinal == 0], alpha=0.5, bins=100)
     plt.legend(["Raw", "Filtered", "MegaDepth"])
-    fig.savefig(f"{output_path}/{scene}_histogram.jpg", dpi=600, bbox_inches="tight")
+    fig.savefig(f"{output_path}/{scene}_depth_coverage_histogram.jpg", dpi=600, bbox_inches="tight")
     plt.close(fig)
 
 
