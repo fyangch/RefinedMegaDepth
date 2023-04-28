@@ -6,6 +6,8 @@ pycolmap/**
 external_dependencies/**
 plots/**
 logs/**
+pretrained/**
+notebooks/pretrained/**
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

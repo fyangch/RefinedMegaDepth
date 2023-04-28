@@ -10,6 +10,7 @@ from typing import Optional
 import pycolmap
 from hloc.reconstruction import create_empty_db, get_image_ids, import_images
 
+from megadepth.postprocessing.cleanup import refine_depth_maps
 from megadepth.utils.constants import ModelType
 from megadepth.utils.setup import DataPaths, get_configs
 from megadepth.visualization.view_projections import align_models
@@ -192,11 +193,13 @@ class Pipeline:
         self.log_step("Cleaning up...")
         start = time.time()
 
-        # TODO: decide if this can be done in the abstract class
-
-        # TODO: implement cleanup
-
         os.makedirs(self.paths.results, exist_ok=True)
+
+        refine_depth_maps(
+            image_dir=self.paths.dense / "images",
+            depth_map_dir=self.paths.dense / "stereo" / "depth_maps",
+            output_dir=self.paths.results,
+        )
 
         end = time.time()
         logging.info(f"Time to clean up: {datetime.timedelta(seconds=end - start)}")
