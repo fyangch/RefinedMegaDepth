@@ -3,6 +3,7 @@ import glob
 
 import numpy as np
 import torch
+import torchvision.transforms as T
 
 from megadepth.utils.io import load
 
@@ -35,23 +36,20 @@ def get_our_raw_depth_map_path(scene, img_name):
 def get_our_filtered_depth_map_path(scene, img_name):
     """Compute path to depth map on cluster for given scene and image_name."""
     return (
-        rf"/cluster/project/infk/courses/252-0579-00L/group01/scenes/{scene}"
-        rf"/results/superpoint_max-superglue-netvlad-50-KA+BA/depth_maps/{img_name}.jpg.npy"
+        rf"/home/andro/RefinedMegaDepth/data/{scene}/"
+        "dense/colmap/stereo/depth_maps/{img_name}.JPG.geometric.bin"
     )
 
 
 def get_our_image_path(scene, img_name):
     """Compute path on cluster for given scene and image_name."""
-    return (
-        rf"/cluster/project/infk/courses/252-0579-00L/group01/scenes/{scene}/"
-        rf"dense/superpoint_max-superglue-netvlad-50-KA+BA/images/{img_name}.jpg"
-    )
+    return rf"/home/andro/RefinedMegaDepth/data/{scene}/dense/colmap/images/{img_name}.JPG"
 
 
 class DepthDataset:
     """Depth dataset."""
 
-    def __init__(self, scenes=["0229", "0015"]):
+    def __init__(self, scenes=["*"], transforms=T.Compose([T.CenterCrop(520)])):
         """Select which scenes to use."""
         self.img_list = []
         self.depth_list = []
@@ -61,6 +59,7 @@ class DepthDataset:
             self.depth_list += glob.glob(
                 get_our_filtered_depth_map_path(scene, "*"), recursive=True
             )
+        self.transforms = transforms
 
     def __len__(self):
         """Number of images."""
@@ -70,16 +69,17 @@ class DepthDataset:
         """Get Image and Label."""
         image = load(self.img_list[idx])
         image = torch.tensor(np.array(image), dtype=float)
-        image = image.permute((0, 3, 1, 2))
-        image = image.unsqueeze(0)  # ahape -> [1,3,h,w]
+        image = image.permute((2, 0, 1))  # ahape -> [3,h,w]
 
         depth = load(self.depth_list[idx])
         depth = torch.tensor(depth, dtype=float)
-        depth = depth.unsqueeze(0).unsqueeze(0)  # shape -> [1,1,h,w]
+        depth = depth.unsqueeze(0)  # shape -> [1,h,w]
 
-        # stack = torch.stack((image, depth),axis=0)
+        # TODO: random crop to have uniform image size
+        stack = torch.cat((image, depth), axis=0)
         # apply geometric transform
-        # image, depth = stack[0:1], stack[1:2]
+        stack = self.transforms(stack)
+        image, depth = stack[0:3], stack[3:4]
 
         return image, depth
 
