@@ -8,6 +8,7 @@ import typing
 from copy import deepcopy
 from typing import Optional, Union
 
+import matplotlib.pyplot as plt
 import numpy as np
 import open3d as o3d
 import pycolmap
@@ -207,6 +208,7 @@ def visualize_point_cloud(
     extrinsics: list,
     min_track_length: int,
     args: argparse.Namespace,
+    color: int = -1,
 ):
     """Visualize the point cloud.
 
@@ -238,6 +240,11 @@ def visualize_point_cloud(
     cameras = get_cameras(model) if args.cameras else None
 
     output_path = os.path.join(args.data_path, args.scene, "visualizations", name, "frames")
+    if color != -1:
+        # -1 keeps rgb image color from reconstruction
+        colors = np.asarray(pcd.colors)
+        colors = np.ones_like(colors) * np.array([plt.cm.tab10(color)[:3]])
+        pcd.colors = o3d.utility.Vector3dVector(colors)
 
     render_frames(
         point_cloud=pcd,
@@ -325,8 +332,16 @@ def main(args: argparse.Namespace):
     )
 
     min_track_length = np.ceil(len(super_model.images) * 0.005)  # 0.5% of images
-    visualize_point_cloud(baseline_model, "baseline", extrinsics, min_track_length, args)
-    visualize_point_cloud(super_model, args.model_name, extrinsics, min_track_length, args)
+    if args.color == -1:
+        visualize_point_cloud(baseline_model, "baseline", extrinsics, min_track_length, args)
+        visualize_point_cloud(super_model, args.model_name, extrinsics, min_track_length, args)
+    else:
+        visualize_point_cloud(
+            baseline_model, "baseline", extrinsics, min_track_length, args, color=0
+        )
+        visualize_point_cloud(
+            super_model, args.model_name, extrinsics, min_track_length, args, color=args.color
+        )
 
     render_movie("baseline", args)
     render_movie(args.model_name, args)
@@ -334,9 +349,19 @@ def main(args: argparse.Namespace):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--data_path", type=str, required=True, help="Path to the data.")
-    parser.add_argument("--scene", type=str, required=True, help="Name of the scene.")
-    parser.add_argument("--model_name", type=str, required=True, help="Name of the model.")
+    parser.add_argument(
+        "--data_path", default="data", type=str, required=False, help="Path to the data."
+    )
+    parser.add_argument(
+        "--scene", default="0229", type=str, required=False, help="Name of the scene."
+    )
+    parser.add_argument(
+        "--model_name",
+        default="superpoint_max-superglue-netvlad-50",
+        type=str,
+        required=False,
+        help="Name of the model.",
+    )
     parser.add_argument(
         "--model_type", type=str, default="sfm", choices=["sfm", "mvs"], help="Type of model."
     )
@@ -347,6 +372,12 @@ if __name__ == "__main__":
         "--quality", type=str, default="high", choices=["low", "high"], help="Quality of the movie."
     )
     parser.add_argument("--initial_rotation", type=float, default=90, help="Initial rotation in x.")
+    parser.add_argument(
+        "--color",
+        type=int,
+        default=1,
+        help="-1 does nothing, recolor all points with specified color index for tab10",
+    )
     args = parser.parse_args()
 
     logging.basicConfig(
