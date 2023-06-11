@@ -142,11 +142,7 @@ def dense_overlap(
                     points_2d[proj_mask][:, 1].astype(int), points_2d[proj_mask][:, 0].astype(int)
                 ]
                 norm_2 = normal_map_2[proj_points_2d[:, 1], proj_points_2d[:, 0]]
-                cosine_disparity = np.sum(norm_1 * norm_2, axis=1)
-                cos_w_2 = np.abs(cosine_disparity)
-                # cos_w_2 = np.clip(
-                #    -normal_map_2[proj_points_2d[:, 1], proj_points_2d[:, 0], 2], 0, 1
-                # )
+                cos_w_2 = np.minimum(np.abs(norm_1[:, 2]), np.abs(norm_2[:, 2]))
                 n_inliners = np.sum(cos_w_2[abs_rel_error < rel_thresh])
             else:
                 n_inliners = np.count_nonzero(abs_rel_error < rel_thresh)
