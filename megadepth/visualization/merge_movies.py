@@ -2,6 +2,7 @@
 import os
 
 import cv2
+import numpy as np
 from tqdm import tqdm
 
 
@@ -15,10 +16,23 @@ def merge_frame(frame0, frame1, t):
     cut = int(frame0.shape[1] * s)
     if cut > 0:
         frame0[:, -cut:] = frame1[:, -cut:]
+        frame0[:, -cut] = 0
     return frame0
 
 
-def merge_videos(filepaths, output_path, labels=False, n_frames_per_cycle=200):
+def blend_frame(frame0, frame1, t):
+    """Define here the transition between the two movies."""
+    # if t < 0.4:
+    #     return frame0
+    # if t > 0.6:
+    #     return frame1
+    s = t
+    if t > 0:
+        frame0 = (frame0 * (1 - s) + s * frame1).astype(np.uint8)
+    return frame0
+
+
+def merge_videos(filepaths, output_path, labels=False, blend=False, n_frames_per_cycle=200):
     """Takes a list of paths to movies.
 
     assume all have the same length
@@ -55,8 +69,11 @@ def merge_videos(filepaths, output_path, labels=False, n_frames_per_cycle=200):
                 current_frame = frame
             if j == int(current_video + 1) % n_videos:
                 next_frame = frame
+        if blend:
+            merged_frame = blend_frame(current_frame, next_frame, current_video % 1)
+        else:
+            merged_frame = merge_frame(current_frame, next_frame, current_video % 1)
 
-        merged_frame = merge_frame(current_frame, next_frame, current_video % 1)
         out.write(merged_frame)
 
         # cycle step

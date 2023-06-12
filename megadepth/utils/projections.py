@@ -12,8 +12,6 @@ def forward_project(
     points_3d: np.ndarray,
     image: pycolmap.Image,
     camera: pycolmap.Camera,
-    return_depth: bool = False,
-    return_mask: bool = False,
 ) -> Union[np.ndarray, Tuple[np.ndarray, np.ndarray], Tuple[np.ndarray, np.ndarray, np.ndarray]]:
     """Project array of 3D points onto the given image. Invalid points are discarded.
 
@@ -34,12 +32,9 @@ def forward_project(
     mask = filter_mask(points_2d, camera.width, camera.height)
     points_2d = points_2d[mask]
 
-    if return_depth:
-        depths = np.array(image.transform_to_image(points_3d))[:, 2]
-        depths = depths[mask]
-        return (points_2d, depths, mask) if return_mask else (points_2d, depths)
-
-    return (points_2d, mask) if return_mask else points_2d
+    depths = np.array(image.transform_to_image(points_3d))[:, 2]
+    depths = depths[mask]
+    return (points_2d, depths, mask)
 
 
 def backward_project(

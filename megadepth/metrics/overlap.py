@@ -57,6 +57,8 @@ def dense_overlap(
     depth_path: Union[Path, str],
     downsample: int = 50,
     rel_thresh: float = 0.03,
+    cosine_weighted=False,
+    normal_path: Union[Path, str] = "None",
 ) -> np.ndarray:
     """Computes the dense overlap metric between a list of images.
 
@@ -108,7 +110,7 @@ def dense_overlap(
         )
 
         for j, k2 in enumerate(images.keys()):
-            if i == j:
+            if i == j and not cosine_weighted:
                 continue
 
             # load second image, camera and depth map
@@ -117,17 +119,33 @@ def dense_overlap(
             depth_map_2 = load_depth_map(os.path.join(depth_path, f"{image_2.name}.geometric.bin"))
 
             # project all 3D points to image 2 to obtain 2D points and associated depth values
-            proj_points_2d, proj_depths = forward_project(
-                points_3d=points_3d, image=image_2, camera=camera_2, return_depth=True
-            )[:2]
+            proj_points_2d, proj_depths, proj_mask = forward_project(  # type: ignore
+                points_3d=points_3d,
+                image=image_2,
+                camera=camera_2,
+            )
 
             # get corresponding depth values from the second depth map
             # depth map values are stored row-wise => first index with y-coordinate
-            depth_2 = np.array([depth_map_2[coords[1], coords[0]] for coords in proj_points_2d])
+            depth_2 = depth_map_2[proj_points_2d[:, 1], proj_points_2d[:, 0]]
 
             # compute inliers based on the absolute relative depth errors
             abs_rel_error = np.abs(depth_2 / proj_depths - 1.0)
-            n_inliners = np.count_nonzero(abs_rel_error < rel_thresh)
+            if cosine_weighted:
+                normal_map_1 = load_depth_map(
+                    os.path.join(normal_path, f"{image_1.name}.geometric.bin")
+                )
+                normal_map_2 = load_depth_map(
+                    os.path.join(normal_path, f"{image_2.name}.geometric.bin")
+                )
+                norm_1 = normal_map_1[
+                    points_2d[proj_mask][:, 1].astype(int), points_2d[proj_mask][:, 0].astype(int)
+                ]
+                norm_2 = normal_map_2[proj_points_2d[:, 1], proj_points_2d[:, 0]]
+                cos_w_2 = np.minimum(np.abs(norm_1[:, 2]), np.abs(norm_2[:, 2]))
+                n_inliners = np.sum(cos_w_2[abs_rel_error < rel_thresh])
+            else:
+                n_inliners = np.count_nonzero(abs_rel_error < rel_thresh)
 
             # final score
             scores[i, j] = n_inliners / n_features
