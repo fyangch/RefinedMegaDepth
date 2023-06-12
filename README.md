@@ -13,8 +13,16 @@ Our project aims to systematically address these problems to establish a refined
 
 # Setup
 
+
+
 ## Linux
-Make sure that you have [conda](https://docs.conda.io/en/latest/miniconda.html) or [pip](https://pip.pypa.io/en/stable/installing/) installed.
+Make sure that you have [conda](https://docs.conda.io/en/latest/miniconda.html) or [pip](https://pip.pypa.io/en/stable/installing/) installed as well as the follwoing dependencies:
+- [pycolmap](https://github.com/colmap/pycolmap)
+- [hloc](https://github.com/cvg/Hierarchical-Localization)
+- [PixSfM](https://github.com/cvg/pixel-perfect-sfm)
+
+If you have access to euler, follow the instruction from this repository to install (py-)colmap, hloc, and pixSfM:
+https://github.com/Phil26AT/3DV_euler
 
 ### Pip
 Make sure that you have python=3.9 installed. Create a new virtual environment using 
@@ -94,7 +102,7 @@ data
 │   │   ├── ...
 ├── ...
 ```
-The pipeline will read the images from folder and create the following folders for the outputs:
+The pipeline will read the scene images from folder and create the following folders for the outputs:
 ```
 data
 ├── scene_1
@@ -110,3 +118,14 @@ data
 ├── ...
 ```
 
+
+# Running the pipeline
+The pipeline can be run using the following command:
+```bash
+python main.py --data_path <path_to_data> --scene <scene_name> --low_memory
+```
+To run on the provided sample data, use the following command:
+```bash
+python main.py --data_path data --scene south-building --low_memory
+```
+The `--low_memory` flag will reduce the memory consumption by using the [low_memory.yaml](https://github.com/cvg/pixel-perfect-sfm/blob/55b10155587ca8eed8324c11f04b2ec9decc31d2/pixsfm/configs/low_memory.yaml) config file for pixSfM. Omit this flag if you have enough memory available.

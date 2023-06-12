@@ -131,7 +131,7 @@ def setup_args() -> argparse.Namespace:
         "--refinements",
         type=str,
         choices=["", "KA", "BA", "KA+BA"],
-        default="BA",
+        default="KA+BA",
         help="The refinement steps to be performed.",
     )
 

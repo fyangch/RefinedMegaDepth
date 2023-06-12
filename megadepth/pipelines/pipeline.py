@@ -90,7 +90,7 @@ class Pipeline:
         try:
             baseline_model = pycolmap.Reconstruction(self.paths.sparse_baseline)
             logging.info(f"Loaded baseline model from {self.paths.sparse_baseline}")
-        except Exception:
+        except ValueError:
             logging.warning("No baseline model found. Skipping alignment.")
             return self.sparse_model
 

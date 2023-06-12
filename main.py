@@ -25,25 +25,15 @@ def main():
     if args.evaluate:
         pipeline.align_with_baseline()
         collect_metrics(paths, args, ModelType.SPARSE)
-        collect_metrics(paths, args, ModelType.REFINED)
+        # collect_metrics(paths, args, ModelType.REFINED)
         # collect_metrics(paths, args, ModelType.DENSE)
         return
 
-    # run pipeline
-    pipeline.preprocess()
-    pipeline.get_pairs()
-    pipeline.extract_features()
-    pipeline.match_features()
-    pipeline.sfm()
-    pipeline.refinement()
-    pipeline.mvs()
-    pipeline.cleanup()
-
     # alterative
-    # pipeline.run() # -> run all steps
+    pipeline.run()  # -> run all steps
 
     collect_metrics(paths, args, model_type=ModelType.SPARSE)
-    collect_metrics(paths, args, model_type=ModelType.REFINED)
+    # collect_metrics(paths, args, model_type=ModelType.REFINED)
     # collect_metrics(paths, args, model_type=ModelType.DENSE)
 
     end = time.time()
