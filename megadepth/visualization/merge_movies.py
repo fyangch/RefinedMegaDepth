@@ -81,9 +81,23 @@ def compress(path):
 
 
 if __name__ == "__main__":
-    paths = ["mvs0.mp4", "mvs1.mp4"]
-    labels = ["Baseline", "Super"]
-    out_file = "out.mp4"
+    # paths = [
+    #     "data/scenes/5001/visualizations/baseline/sfm.mp4",
+    #     "data/scenes/5001/visualizations/superpoint_max-superglue-netvlad-50-BA/sfm.mp4",
+    #     "data/scenes/5001/visualizations/superpoint_max-superglue-netvlad-50-KA+BA/sfm.mp4",
+    #     # "data/scenes/5001/visualizations/superpoint_max-superglue-netvlad-50-KA+BA/mvs.mp4",
+    # ]
+    paths = [
+        # "/Volumes/Extreme_SSD/MegaDepth/scenes/0229/visualizations/baseline/mvs.mp4",
+        # "/Volumes/Extreme_SSD/MegaDepth/scenes/0229/visualizations/"
+        # +"superpoint_max-superglue-netvlad-50/sfm.mp4",
+        "/Volumes/Extreme_SSD/MegaDepth/scenes/0229/visualizations/"
+        + "superpoint_max-superglue-netvlad-50-KA+BA/mvs.mp4",
+        "/Volumes/Extreme_SSD/MegaDepth/scenes/0229/visualizations/loftr-netvlad-50-KA+BA/mvs.mp4",
+    ]
+    out_file = "data/scenes/0229/visualizations/0229-mvs-loftr.mp4"
+    labels = ["Super (SfM + KA+BA)", "LoFTR (KA+BA)"]  # , "Super (MVS)"]
+
     merge_videos(
         paths,
         out_file,

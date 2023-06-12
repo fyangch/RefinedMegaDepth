@@ -7,10 +7,10 @@ import time
 
 from hloc import match_dense
 
-from megadepth.pipelines.hloc import HlocPipeline
+from megadepth.pipelines.pixsfm import PixSfMPipeline
 
 
-class LoftrPipeline(HlocPipeline):
+class LoftrPipeline(PixSfMPipeline):
     """HLoc-based pipeline for LoFTR."""
 
     def __init__(self, args: argparse.Namespace) -> None:

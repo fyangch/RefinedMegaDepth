@@ -20,3 +20,6 @@ install_m1: install_external_deps_m1 install_requirements_conda install_md
 install_conda: install_requirements_conda install_precommit install_md
 
 install_pip: install_requirements_pip install_precommit install_md
+
+sync:
+	rsync -auv --progress --exclude-from=.gitignore --exclude=data --exclude=external_dependencies . ${USR}@euler.ethz.ch:/cluster/home/${USR}/code/RefinedMegaDepth

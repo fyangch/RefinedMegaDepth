@@ -63,14 +63,14 @@ def get_pipeline(args: argparse.Namespace) -> Pipeline:
         from megadepth.pipelines.colmap import ColmapPipeline
 
         return ColmapPipeline(args)
-    elif "KA" in args.refinements:
-        from megadepth.pipelines.pixsfm import PixSfMPipeline
-
-        return PixSfMPipeline(args)
     elif args.matcher == Matcher.LOFTR.value:
         from megadepth.pipelines.loftr import LoftrPipeline
 
         return LoftrPipeline(args)
+    elif "KA" in args.refinements:
+        from megadepth.pipelines.pixsfm import PixSfMPipeline
+
+        return PixSfMPipeline(args)
     else:
         from megadepth.pipelines.hloc import HlocPipeline
 

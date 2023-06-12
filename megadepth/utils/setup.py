@@ -11,7 +11,7 @@ from hloc import extract_features, match_dense, match_features
 from omegaconf import OmegaConf
 
 from megadepth.utils.args import setup_args
-from megadepth.utils.constants import Features, Matcher, Retrieval
+from megadepth.utils.constants import Matcher, Retrieval
 
 
 def setup() -> argparse.Namespace:
@@ -74,8 +74,8 @@ def get_configs(args: argparse.Namespace) -> dict:
 
     # feature config
     feature_config = extract_features.confs[args.features]
-    if args.features == Features.SIFT.value:
-        feature_config["preprocessing"]["resize_max"] = 3200
+    # if args.features == Features.SIFT.value:
+    # feature_config["preprocessing"]["resize_max"] = 3200
 
     # matcher config
     if args.matcher == Matcher.LOFTR.value:
@@ -191,6 +191,8 @@ class DataPaths:
             return f"{args.matcher}-{args.retrieval}-{args.n_retrieval_matches}-{args.refinements}"
         elif args.retrieval == Retrieval.EXHAUSTIVE.value:
             return f"{args.features}-{args.matcher}-{args.retrieval}-{args.refinements}"
+        elif args.refinements not in ["KA", "KA+BA"]:
+            return f"{args.features}-{args.matcher}-{args.retrieval}-{args.n_retrieval_matches}"
         else:
             return (
                 f"{args.features}"

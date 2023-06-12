@@ -172,6 +172,10 @@ class HlocPipeline(Pipeline):
             )
             return
 
+        if "KA" not in self.args.refinements:
+            logging.info("Skipping refinement...")
+            return
+
         os.makedirs(self.paths.sparse, exist_ok=True)
         os.makedirs(self.paths.refined_sparse, exist_ok=True)
 

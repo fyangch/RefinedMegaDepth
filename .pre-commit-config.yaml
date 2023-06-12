@@ -19,7 +19,7 @@ repos:
       args: [
         --max-line-length=100,
         --docstring-convention=google,
-        --ignore=E203
+        --ignore=E203 W503
       ]
       exclude: ^(venv/|docs/|.*__init__.py)
       types: ['python']

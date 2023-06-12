@@ -291,8 +291,16 @@ def main(args: argparse.Namespace):
     baseline_path = os.path.join(base_dir, "sparse", "baseline")
 
     super_model = pycolmap.Reconstruction(super_path)
-    try:
-        baseline_model = pycolmap.Reconstruction(baseline_path)
+
+    if os.path.exists(baseline_path):
+        try:
+            baseline_model = pycolmap.Reconstruction(baseline_path)
+        except ValueError:
+            baseline_model = None
+    else:
+        baseline_model = None
+
+    if baseline_model is not None:
         super_model = align_models(
             reconstruction_anchor=baseline_model, reconstruction_align=super_model
         )
@@ -301,8 +309,7 @@ def main(args: argparse.Namespace):
 
         logging.info("Found baseline model.")
 
-    except Exception:
-        baseline_model = None
+    else:
         pca_transform = compute_pca_on_camera_poses(super_model)
         scale = compute_scale_on_points(super_model)
         logging.info("No baseline model found. Skipping alignment.")
@@ -310,11 +317,17 @@ def main(args: argparse.Namespace):
     logging.info(f"Scale: {scale}")
     logging.info(f"PCA transform:\n{pca_transform}")
 
-    logging.info(f"(points) Baseline scale: {compute_scale_on_points(baseline_model)}")
-    logging.info(f"(points) Super scale:    {compute_scale_on_points(super_model)}")
+    # # turn 180 degrees around x
+    # rot = np.eye(4)
+    # rot[1, 1] = -1
+    # rot[2, 2] = -1
+    # pca_transform = pca_transform @ rot
 
-    logging.info(f"(camera) Baseline scale: {compute_scale_on_camera_poses(baseline_model)}")
-    logging.info(f"(camera) Super scale:    {compute_scale_on_camera_poses(super_model)}")
+    # logging.info(f"(points) Baseline scale: {compute_scale_on_points(baseline_model)}")
+    # logging.info(f"(points) Super scale:    {compute_scale_on_points(super_model)}")
+
+    # logging.info(f"(camera) Baseline scale: {compute_scale_on_camera_poses(baseline_model)}")
+    # logging.info(f"(camera) Super scale:    {compute_scale_on_camera_poses(super_model)}")
 
     extrinsics = surround_view(
         transform=pca_transform,
