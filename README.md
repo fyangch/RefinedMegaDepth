@@ -72,6 +72,8 @@ Install the dependencies:
 make install_m1
 ```
 
+Note that this will not work with pixsfm.
+
 ## Install repository
 
 ```pip install -e .```
@@ -120,6 +122,12 @@ data
 
 
 # Running the pipeline
+Download a small sample dataset from [here](https://polybox.ethz.ch/index.php/s/gQnwxa68aJQTaAW) or using the following command:
+```bash
+wget https://polybox.ethz.ch/index.php/s/gQnwxa68aJQTaAW/download -O data/south-building.zip
+unzip data/south-building.zip -d data
+rm data/south-building.zip
+```
 The pipeline can be run using the following command:
 ```bash
 python main.py --data_path <path_to_data> --scene <scene_name> --low_memory
