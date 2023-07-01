@@ -30,17 +30,7 @@ def main():
         return
 
     # run pipeline
-    pipeline.preprocess()
-    pipeline.get_pairs()
-    pipeline.extract_features()
-    pipeline.match_features()
-    pipeline.sfm()
-    pipeline.refinement()
-    pipeline.mvs()
-    pipeline.cleanup()
-
-    # alterative
-    # pipeline.run() # -> run all steps
+    pipeline.run()
 
     collect_metrics(paths, args, model_type=ModelType.SPARSE)
     collect_metrics(paths, args, model_type=ModelType.REFINED)

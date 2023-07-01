@@ -1,7 +1,28 @@
 """Utility functions."""
 
+import time
+from typing import Callable
+
 import numpy as np
 import pycolmap
+
+
+def time_function(func: Callable) -> Callable:
+    """Time a function.
+
+    Args:
+        func (Callable): Function to time.
+
+    Returns:
+        Callable: Function with timing.
+    """
+
+    def wrapper(*args, **kwargs) -> float:
+        start = time.time()
+        func(*args, **kwargs)
+        return time.time() - start
+
+    return wrapper
 
 
 def camera_pixel_grid(

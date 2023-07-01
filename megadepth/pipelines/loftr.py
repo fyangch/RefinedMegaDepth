@@ -1,9 +1,7 @@
 """Pipeline using LoFTR."""
 import argparse
-import datetime
 import logging
 import os
-import time
 
 from hloc import match_dense
 
@@ -25,7 +23,6 @@ class LoftrPipeline(PixSfMPipeline):
     def match_features(self) -> None:
         """Match features between images."""
         self.log_step("Matching and extracting features...")
-        start = time.time()
 
         logging.debug("Matching and extracting features with LoFTR")
         logging.debug(f"Matcher config: {self.configs['matcher']}")
@@ -42,9 +39,4 @@ class LoftrPipeline(PixSfMPipeline):
             pairs=self.paths.matches_retrieval,
             features=self.paths.features,
             matches=self.paths.matches,
-        )
-
-        end = time.time()
-        logging.info(
-            f"Time to match and extract features: {datetime.timedelta(seconds=end - start)}"
         )

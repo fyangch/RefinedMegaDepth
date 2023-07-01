@@ -1,6 +1,7 @@
 """Abstract pipeline class."""
 import argparse
 import datetime
+import json
 import logging
 import os
 import time
@@ -13,6 +14,7 @@ from hloc.reconstruction import create_empty_db, get_image_ids, import_images
 from megadepth.postprocessing.cleanup import refine_depth_maps
 from megadepth.utils.constants import ModelType
 from megadepth.utils.setup import DataPaths, get_configs
+from megadepth.utils.utils import time_function
 from megadepth.visualization.view_projections import align_models
 
 
@@ -107,7 +109,6 @@ class Pipeline:
     def preprocess(self) -> None:
         """Remove corrupted and other problematic images as a preprocessing step."""
         self.log_step("Preprocessing images...")
-        start = time.time()
 
         # create dummy database and try to import all images
         database = self.paths.data / "tmp_database.db"
@@ -126,9 +127,6 @@ class Pipeline:
 
         # delete dummy database
         database.unlink()
-
-        end = time.time()
-        logging.info(f"Time to preprocess images: {datetime.timedelta(seconds=end - start)}")
 
     @abstractmethod
     def get_pairs(self) -> None:
@@ -158,7 +156,6 @@ class Pipeline:
     def mvs(self) -> None:
         """Run Multi-View Stereo."""
         self.log_step("Running Multi-View Stereo...")
-        start = time.time()
 
         os.makedirs(self.paths.dense, exist_ok=True)
 
@@ -185,13 +182,9 @@ class Pipeline:
             verbose=self.args.verbose,
         )
 
-        end = time.time()
-        logging.info(f"Time to run MVS: {datetime.timedelta(seconds=end - start)}")
-
-    def cleanup(self) -> None:
-        """Clean up the pipeline."""
-        self.log_step("Cleaning up...")
-        start = time.time()
+    def postprocess(self) -> None:
+        """Postprocess the raw depth maps."""
+        self.log_step("Postprocessing depth maps...")
 
         os.makedirs(self.paths.results, exist_ok=True)
 
@@ -201,16 +194,26 @@ class Pipeline:
             output_dir=self.paths.results,
         )
 
-        end = time.time()
-        logging.info(f"Time to clean up: {datetime.timedelta(seconds=end - start)}")
-
     def run(self) -> None:
         """Run the pipeline."""
-        self.preprocess()
-        self.get_pairs()
-        self.extract_features()
-        self.match_features()
-        self.sfm()
-        self.refinement()
-        self.mvs()
-        self.cleanup()
+        start_time = time.time()
+        timings = {
+            "preprocessing": time_function(self.preprocess)(),
+            "pairs-extraction": time_function(self.get_pairs)(),
+            "feature-extraction": time_function(self.extract_features)(),
+            "feature-matching": time_function(self.match_features)(),
+            "sfm": time_function(self.sfm)(),
+            "refinement": time_function(self.refinement)(),
+            "mvs": time_function(self.mvs)(),
+            "postprocessing": time_function(self.postprocess)(),
+        }
+        total_time = time.time() - start_time
+
+        logging.info("Timings:")
+        for k, v in timings.items():
+            logging.info(f"  {k}: {datetime.timedelta(seconds=v)} ({v / total_time:.2%})")
+        logging.info(f"  Total: {datetime.timedelta(seconds=total_time)}")
+
+        timings_path = self.paths.metrics / "timings.json"
+        with open(timings_path, "w") as f:
+            json.dump(timings, f, indent=4)

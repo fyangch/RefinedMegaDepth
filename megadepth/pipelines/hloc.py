@@ -1,9 +1,7 @@
 """Pipeline using HLoc."""
 import argparse
-import datetime
 import logging
 import os
-import time
 
 from hloc import (
     extract_features,
@@ -50,7 +48,6 @@ class HlocPipeline(Pipeline):
     def get_pairs(self) -> None:
         """Get pairs of images to match."""
         self.log_step("Getting pairs...")
-        start = time.time()
 
         # match global features to get pairs
         os.makedirs(self.paths.features.parent, exist_ok=True)
@@ -88,13 +85,9 @@ class HlocPipeline(Pipeline):
         else:
             raise NotImplementedError(f"Retrieval method {self.args.retrieval} not implemented")
 
-        end = time.time()
-        logging.info(f"Time to get pairs: {datetime.timedelta(seconds=end - start)}")
-
     def extract_features(self) -> None:
         """Extract features from images."""
         self.log_step("Extracting features...")
-        start = time.time()
 
         logging.debug("Extracting features with hloc")
         logging.debug(f"Feature config: {self.configs['feature']}")
@@ -108,13 +101,9 @@ class HlocPipeline(Pipeline):
             feature_path=self.paths.features,
         )
 
-        end = time.time()
-        logging.info(f"Time to extract features: {datetime.timedelta(seconds=end - start)}")
-
     def match_features(self) -> None:
         """Match features between images."""
         self.log_step("Matching features...")
-        start = time.time()
 
         logging.debug("Matching features with hloc")
         logging.debug(f"Matcher config: {self.configs['matcher']}")
@@ -131,13 +120,9 @@ class HlocPipeline(Pipeline):
             matches=self.paths.matches,
         )
 
-        end = time.time()
-        logging.info(f"Time to match features: {datetime.timedelta(seconds=end - start)}")
-
     def sfm(self) -> None:
         """Run Structure from Motion."""
         self.log_step("Running Structure from Motion...")
-        start = time.time()
 
         os.makedirs(self.paths.sparse, exist_ok=True)
 
@@ -158,13 +143,9 @@ class HlocPipeline(Pipeline):
         logging.debug("Aligning reconstruction with baseline...")
         self.align_with_baseline()
 
-        end = time.time()
-        logging.info(f"Time to run SFM: {datetime.timedelta(seconds=end - start)}")
-
     def refinement(self) -> None:
         """Refine the reconstruction using PixSFM."""
         self.log_step("Refining the reconstruction...")
-        start = time.time()
 
         if self.model_exists(ModelType.REFINED) and not self.args.overwrite:
             logging.info(
@@ -199,8 +180,3 @@ class HlocPipeline(Pipeline):
         reconstruction.write(str(self.paths.refined_sparse))
 
         self.refined_model = reconstruction
-
-        end = time.time()
-        logging.info(
-            f"Time to refine the reconstruction: {datetime.timedelta(seconds=end - start)}"
-        )

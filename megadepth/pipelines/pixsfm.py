@@ -1,10 +1,8 @@
 """Pipeline using PixSfM."""
 
 import argparse
-import datetime
 import logging
 import os
-import time
 
 import pycolmap
 from pixsfm.refine_hloc import PixSfM
@@ -27,7 +25,6 @@ class PixSfMPipeline(HlocPipeline):
     def sfm(self) -> None:
         """Run Structure from Motion."""
         self.log_step("Running Structure from Motion...")
-        start = time.time()
 
         os.makedirs(self.paths.sparse, exist_ok=True)
 
@@ -52,9 +49,6 @@ class PixSfMPipeline(HlocPipeline):
 
         logging.debug("Aligning reconstruction with baseline...")
         self.align_with_baseline()
-
-        end = time.time()
-        logging.info(f"Time to run SFM: {datetime.timedelta(seconds=end - start)}")
 
     def refinement(self) -> None:
         """Skip refinement as it is done in SFM."""
