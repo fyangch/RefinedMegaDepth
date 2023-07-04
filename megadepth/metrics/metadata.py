@@ -9,9 +9,9 @@ from pathlib import Path
 from typing import Any, Dict, Tuple, Union
 
 import numpy as np
-import pandas as pd
 import pycolmap
 
+from megadepth.metrics.nighttime import run_day_night_classification
 from megadepth.metrics.overlap import dense_overlap, sparse_overlap
 from megadepth.utils.constants import ModelType
 from megadepth.utils.setup import DataPaths
@@ -33,6 +33,13 @@ def collect_metrics(
     if model_type == ModelType.SPARSE:
         reconstruction = pycolmap.Reconstruction(paths.sparse)
         metrics, overlap = collect_sparse(reconstruction)
+
+        # determine nighttime images
+        night_df = run_day_night_classification(reconstruction, paths.images)
+        metrics["n_night_images"] = len(
+            [img for img in reconstruction.images.values() if night_df.loc[img.name, "is_night"]]
+        )
+        night_df.to_csv(os.path.join(paths.metrics, "night_images.csv"))
     elif model_type == ModelType.REFINED:
         reconstruction = pycolmap.Reconstruction(paths.refined_sparse)
         metrics, overlap = collect_sparse(reconstruction)
@@ -53,13 +60,6 @@ def collect_metrics(
     )
     metrics["n_images"] = n_images
     metrics["perc_reg_images"] = metrics["n_reg_images"] / n_images * 100
-
-    # number of registered nighttime images (if metadata is available)
-    if os.path.exists(paths.metrics.parent / "night_images.csv"):
-        df = pd.read_csv(paths.metrics.parent / "night_images.csv", index_col=0)
-        metrics["n_night_images"] = len(
-            [img for img in reconstruction.images.values() if df.loc[img.name, "is_night"]]
-        )
 
     # mean overlap
     metrics["mean_overlap"] = np.mean(overlap)
