@@ -1,3 +1,4 @@
+scene: ??? # mandatory value to be passed as a command line arg
 data_path: data
 
 steps:
@@ -23,8 +24,9 @@ refinement:
   steps: KA+BA
   low_memory: false
 
+colmap: false
 overwrite: true
-evaluate: true
+evaluate: false # TODO: remove this once collect_metrics is a pipeline step
 
 logging:
   log_dir: logs

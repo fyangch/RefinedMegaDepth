@@ -1,6 +1,5 @@
 """Collect metadata from a COLMAP reconstruction."""
 
-import argparse
 import datetime
 import json
 import logging
@@ -10,6 +9,7 @@ from typing import Any, Dict, Tuple, Union
 
 import numpy as np
 import pycolmap
+from omegaconf import DictConfig
 
 from megadepth.metrics.nighttime import run_day_night_classification
 from megadepth.metrics.overlap import dense_overlap, sparse_overlap
@@ -17,14 +17,12 @@ from megadepth.utils.constants import ModelType
 from megadepth.utils.setup import DataPaths
 
 
-def collect_metrics(
-    paths: DataPaths, args: argparse.Namespace, model_type: ModelType
-) -> Dict[str, Any]:
+def collect_metrics(paths: DataPaths, config: DictConfig, model_type: ModelType) -> Dict[str, Any]:
     """Collect metrics for a COLMAP reconstruction.
 
     Args:
         paths: The data paths for the reconstruction.
-        args: The parsed command line arguments.
+        config (DictConfig): Config with values from the yaml file and CLI.
         model_type: The type of model to collect metrics for.
 
     Returns:
@@ -65,12 +63,12 @@ def collect_metrics(
     metrics["mean_overlap"] = np.mean(overlap)
 
     # add pipeline information
-    metrics["scene"] = str(args.scene)
+    metrics["scene"] = str(config.scene)
     metrics["model_name"] = paths.model_name
-    metrics["retrieval"] = args.retrieval
-    metrics["n_retrieval_matches"] = args.n_retrieval_matches
-    metrics["features"] = args.features
-    metrics["matcher"] = args.matcher
+    metrics["retrieval"] = config.retrieval.name
+    metrics["n_retrieval_matches"] = config.retrieval.n_matches
+    metrics["features"] = config.features
+    metrics["matcher"] = config.matcher
 
     logging.debug(f"Metrics for {model_type.value} model:")
     for k, v in metrics.items():
@@ -136,50 +134,3 @@ def collect_dense(
     overlap = dense_overlap(reconstruction, depth_map_path)
 
     return metrics, overlap
-
-
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--data_path", type=str, required=True)
-    parser.add_argument("--scene", type=str, required=True)
-    parser.add_argument("--model_name", type=str, required=True)
-    parser.add_argument(
-        "--model_type",
-        type=str,
-        choices=[m.value for m in ModelType],
-        default=ModelType.SPARSE.value,
-    )
-    args = parser.parse_args()
-
-    model_path = os.path.join(args.data_path, args.scene, args.model_type, args.model_name)
-
-    if args.model_type == ModelType.SPARSE.value:
-        model = pycolmap.Reconstruction(model_path)
-        metrics, overlap = collect_sparse(model)
-    elif args.model_type == ModelType.DENSE.value:
-        model = pycolmap.Reconstruction(os.path.join(model_path, "sparse"))
-        depth_map_path = os.path.join(model_path, "stereo", "depth_maps")
-        metrics, overlap = collect_dense(model, depth_map_path)
-    else:
-        raise ValueError(f"Unknown model type: {args.model_type}")
-
-    metrics["scene"] = args.scene
-    metrics["model_name"] = args.model_name
-
-    print("Metrics:")
-    for key, value in metrics.items():
-        print(f"{key}: {value}")
-
-    metrics_path = os.path.join(args.data_path, args.scene, "metrics", args.model_name)
-    if not os.path.exists(metrics_path):
-        os.makedirs(metrics_path)
-
-    timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-
-    overlap_fn = f"{args.model_type}-overlap-{timestamp}.npy"
-    metrics["overlap_fn"] = overlap_fn
-    with open(os.path.join(metrics_path, overlap_fn), "wb") as f_overlap:
-        np.save(f_overlap, overlap)
-
-    with open(os.path.join(metrics_path, f"{args.model_type}-{timestamp}.json"), "w") as f_metric:
-        json.dump(metrics, f_metric, indent=4)

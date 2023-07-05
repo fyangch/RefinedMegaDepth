@@ -1,10 +1,10 @@
 """Pipeline using COLMAP."""
-import argparse
 import logging
 import os
 import shutil
 
 import pycolmap
+from omegaconf import DictConfig
 
 from megadepth.pipelines.pipeline import Pipeline
 from megadepth.utils.constants import ModelType
@@ -13,9 +13,9 @@ from megadepth.utils.constants import ModelType
 class ColmapPipeline(Pipeline):
     """Pipeline for COLMAP."""
 
-    def __init__(self, args: argparse.Namespace) -> None:
+    def __init__(self, config: DictConfig) -> None:
         """Initialize the pipeline."""
-        super().__init__(args)
+        super().__init__(config)
 
     def get_pairs(self) -> None:
         """Get pairs of images to match."""
@@ -28,7 +28,7 @@ class ColmapPipeline(Pipeline):
 
         os.makedirs(self.paths.db.parent, exist_ok=True)
         if os.path.exists(self.paths.db):
-            if self.args.overwrite:
+            if self.config.overwrite:
                 logging.info("Database already exists, deleting it...")
                 # delete file
                 fname = str(self.paths.db)
@@ -38,7 +38,9 @@ class ColmapPipeline(Pipeline):
                 return
 
         pycolmap.extract_features(
-            database_path=self.paths.db, image_path=self.paths.images, verbose=self.args.verbose
+            database_path=self.paths.db,
+            image_path=self.paths.images,
+            verbose=self.config.logging.verbose,
         )
 
     def match_features(self) -> None:
@@ -46,13 +48,13 @@ class ColmapPipeline(Pipeline):
         self.log_step("Matching features...")
 
         logging.debug("Exhaustive matching features with colmap")
-        pycolmap.match_exhaustive(self.paths.db, verbose=self.args.verbose)
+        pycolmap.match_exhaustive(self.paths.db, verbose=self.config.logging.verbose)
 
     def sfm(self) -> None:
         """Run Structure from Motion."""
         self.log_step("Running Structure from Motion...")
 
-        if self.model_exists(ModelType.SPARSE) and not self.args.overwrite:
+        if self.model_exists(ModelType.SPARSE) and not self.config.overwrite:
             logging.info(f"Reconstruction exists at {self.paths.sparse}. Skipping SFM...")
             return
 
@@ -92,18 +94,18 @@ class ColmapPipeline(Pipeline):
             output_path=self.paths.dense,
             input_path=self.paths.refined_sparse,
             image_path=self.paths.images,
-            verbose=self.args.verbose,
+            verbose=self.config.logging.verbose,
         )
 
         logging.info("Running patch_match_stereo...")
         pycolmap.patch_match_stereo(
             workspace_path=self.paths.dense,
-            verbose=self.args.verbose,
+            verbose=self.config.logging.verbose,
         )
 
         logging.info("Running stereo_fusion...")
         pycolmap.stereo_fusion(
             output_path=self.paths.dense / "dense.ply",
             workspace_path=self.paths.dense,
-            verbose=self.args.verbose,
+            verbose=self.config.logging.verbose,
         )

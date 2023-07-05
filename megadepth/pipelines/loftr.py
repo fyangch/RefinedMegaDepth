@@ -1,9 +1,9 @@
 """Pipeline using LoFTR."""
-import argparse
 import logging
 import os
 
 from hloc import match_dense
+from omegaconf import DictConfig
 
 from megadepth.pipelines.pixsfm import PixSfMPipeline
 
@@ -11,9 +11,9 @@ from megadepth.pipelines.pixsfm import PixSfMPipeline
 class LoftrPipeline(PixSfMPipeline):
     """HLoc-based pipeline for LoFTR."""
 
-    def __init__(self, args: argparse.Namespace) -> None:
+    def __init__(self, config: DictConfig) -> None:
         """Initialize the pipeline."""
-        super().__init__(args)
+        super().__init__(config)
 
     def extract_features(self) -> None:
         """Extract features from images."""

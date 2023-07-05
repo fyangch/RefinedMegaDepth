@@ -4,4 +4,5 @@ matplotlib
 pandas
 scikit-image
 transformers
+hydra-core
 git+https://github.com/CSAILVision/semantic-segmentation-pytorch.git@master

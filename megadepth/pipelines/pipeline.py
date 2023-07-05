@@ -1,5 +1,4 @@
 """Abstract pipeline class."""
-import argparse
 import datetime
 import json
 import logging
@@ -10,6 +9,7 @@ from typing import Optional
 
 import pycolmap
 from hloc.reconstruction import create_empty_db, get_image_ids, import_images
+from omegaconf import DictConfig
 
 from megadepth.postprocessing.cleanup import refine_depth_maps
 from megadepth.utils.constants import ModelType
@@ -21,15 +21,15 @@ from megadepth.visualization.view_projections import align_models
 class Pipeline:
     """Abstract pipeline class."""
 
-    def __init__(self, args: argparse.Namespace) -> None:
+    def __init__(self, config: DictConfig) -> None:
         """Initialize the pipeline.
 
         Args:
-            args: Arguments from the command line.
+            config (DictConfig): Config with values from the yaml file and CLI.
         """
-        self.args = args
-        self.configs = get_configs(args)
-        self.paths = DataPaths(args)
+        self.config = config
+        self.configs = get_configs(config)
+        self.paths = DataPaths(config)
         self.n_images = len(os.listdir(self.paths.images))
         self.sparse_model: Optional[pycolmap.Reconstruction] = None
         self.refined_model: Optional[pycolmap.Reconstruction] = None
@@ -166,20 +166,20 @@ class Pipeline:
             output_path=self.paths.dense,
             input_path=self.paths.refined_sparse,
             image_path=self.paths.images,
-            verbose=self.args.verbose,
+            verbose=self.config.logging.verbose,
         )
 
         logging.info("Running patch_match_stereo...")
         pycolmap.patch_match_stereo(
             workspace_path=self.paths.dense,
-            verbose=self.args.verbose,
+            verbose=self.config.logging.verbose,
         )
 
         logging.info("Running stereo_fusion...")
         pycolmap.stereo_fusion(
             output_path=self.paths.dense / "dense.ply",
             workspace_path=self.paths.dense,
-            verbose=self.args.verbose,
+            verbose=self.config.logging.verbose,
         )
 
     def postprocess(self) -> None:

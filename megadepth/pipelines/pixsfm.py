@@ -1,10 +1,10 @@
 """Pipeline using PixSfM."""
 
-import argparse
 import logging
 import os
 
 import pycolmap
+from omegaconf import DictConfig
 from pixsfm.refine_hloc import PixSfM
 
 from megadepth.pipelines.hloc import HlocPipeline
@@ -14,13 +14,13 @@ from megadepth.utils.constants import ModelType
 class PixSfMPipeline(HlocPipeline):
     """Pipeline using PixSfM."""
 
-    def __init__(self, args: argparse.Namespace) -> None:
+    def __init__(self, config: DictConfig) -> None:
         """Initialize pipeline.
 
         Args:
-            args: Arguments from command line.
+            config (DictConfig): Config with values from the yaml file and CLI.
         """
-        super().__init__(args)
+        super().__init__(config)
 
     def sfm(self) -> None:
         """Run Structure from Motion."""
@@ -28,7 +28,7 @@ class PixSfMPipeline(HlocPipeline):
 
         os.makedirs(self.paths.sparse, exist_ok=True)
 
-        if self.model_exists(ModelType.SPARSE) and not self.args.overwrite:
+        if self.model_exists(ModelType.SPARSE) and not self.config.overwrite:
             logging.info("Sparse model already exists. Skipping.")
             return
 
@@ -40,7 +40,7 @@ class PixSfMPipeline(HlocPipeline):
             features_path=self.paths.features,
             matches_path=self.paths.matches,
             cache_path=self.paths.cache,
-            verbose=self.args.verbose,
+            verbose=self.config.logging.verbose,
         )
 
         self.sparse_model = model

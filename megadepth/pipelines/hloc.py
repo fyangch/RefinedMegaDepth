@@ -1,5 +1,4 @@
 """Pipeline using HLoc."""
-import argparse
 import logging
 import os
 
@@ -12,6 +11,7 @@ from hloc import (
     pairs_from_retrieval,
     reconstruction,
 )
+from omegaconf import DictConfig
 from pixsfm.refine_hloc import PixSfM
 
 from megadepth.pipelines.pipeline import Pipeline
@@ -21,9 +21,9 @@ from megadepth.utils.constants import ModelType, Retrieval
 class HlocPipeline(Pipeline):
     """Pipeline for HLoc."""
 
-    def __init__(self, args: argparse.Namespace) -> None:
+    def __init__(self, config: DictConfig) -> None:
         """Initialize the pipeline."""
-        super().__init__(args)
+        super().__init__(config)
 
     def _extract_pairs_from_retrieval(self):
         """Extract pairs from retrieval."""
@@ -36,12 +36,12 @@ class HlocPipeline(Pipeline):
             feature_path=self.paths.features_retrieval,
         )
 
-        logging.debug(f"Using {self.args.retrieval}")
+        logging.debug(f"Using {self.config.retrieval.name}")
         logging.debug(f"Storing pairs to {self.paths.matches_retrieval}")
 
         pairs_from_retrieval.main(
             descriptors=self.paths.features_retrieval,
-            num_matched=self.args.n_retrieval_matches,
+            num_matched=self.config.retrieval.n_matches,
             output=self.paths.matches_retrieval,
         )
 
@@ -53,7 +53,7 @@ class HlocPipeline(Pipeline):
         os.makedirs(self.paths.features.parent, exist_ok=True)
         os.makedirs(self.paths.matches_retrieval.parent, exist_ok=True)
 
-        if self.args.retrieval == Retrieval.EXHAUSTIVE.value:
+        if self.config.retrieval.name == Retrieval.EXHAUSTIVE.value:
             logging.debug("Using exhaustive retrieval")
             logging.debug(f"Storing pairs to {self.paths.matches_retrieval}")
 
@@ -61,29 +61,31 @@ class HlocPipeline(Pipeline):
 
             pairs_from_exhaustive.main(image_list=image_list, output=self.paths.matches_retrieval)
 
-        elif self.args.retrieval == Retrieval.POSES.value:
-            logging.debug(f"Using {self.args.retrieval}")
+        elif self.config.retrieval.name == Retrieval.POSES.value:
+            logging.debug(f"Using {self.config.retrieval.name}")
 
             pairs_from_poses.main(
                 model=self.paths.baseline_model,
                 output=self.paths.matches_retrieval,
-                num_matched=self.args.n_retrieval_matches,
+                num_matched=self.config.retrieval.n_matches,
             )
 
-        elif self.args.retrieval == Retrieval.COVISIBILITY.value:
-            logging.debug(f"Using {self.args.retrieval}")
+        elif self.config.retrieval.name == Retrieval.COVISIBILITY.value:
+            logging.debug(f"Using {self.config.retrieval.name}")
 
             pairs_from_covisibility.main(
                 model=self.paths.baseline_model,
                 output=self.paths.matches_retrieval,
-                num_matched=self.args.n_retrieval_matches,
+                num_matched=self.config.retrieval.n_matches,
             )
 
-        elif self.args.retrieval in [Retrieval.NETVLAD.value, Retrieval.COSPLACE.value]:
+        elif self.config.retrieval.name in [Retrieval.NETVLAD.value, Retrieval.COSPLACE.value]:
             self._extract_pairs_from_retrieval()
 
         else:
-            raise NotImplementedError(f"Retrieval method {self.args.retrieval} not implemented")
+            raise NotImplementedError(
+                f"Retrieval method {self.config.retrieval.name} not implemented"
+            )
 
     def extract_features(self) -> None:
         """Extract features from images."""
@@ -126,7 +128,7 @@ class HlocPipeline(Pipeline):
 
         os.makedirs(self.paths.sparse, exist_ok=True)
 
-        if self.model_exists(ModelType.SPARSE) and not self.args.overwrite:
+        if self.model_exists(ModelType.SPARSE) and not self.config.overwrite:
             logging.info(f"Reconstruction exists at {self.paths.sparse}. Skipping SFM...")
             return
 
@@ -137,7 +139,7 @@ class HlocPipeline(Pipeline):
             pairs=self.paths.matches_retrieval,
             features=self.paths.features,
             matches=self.paths.matches,
-            verbose=self.args.verbose,
+            verbose=self.config.logging.verbose,
         )
 
         logging.debug("Aligning reconstruction with baseline...")
@@ -147,13 +149,13 @@ class HlocPipeline(Pipeline):
         """Refine the reconstruction using PixSFM."""
         self.log_step("Refining the reconstruction...")
 
-        if self.model_exists(ModelType.REFINED) and not self.args.overwrite:
+        if self.model_exists(ModelType.REFINED) and not self.config.overwrite:
             logging.info(
                 f"Reconstruction exists at {self.paths.refined_sparse}. Skipping refinement..."
             )
             return
 
-        if "KA" not in self.args.refinements:
+        if "KA" not in self.config.refinement.steps:
             logging.info("Skipping refinement...")
             return
 
