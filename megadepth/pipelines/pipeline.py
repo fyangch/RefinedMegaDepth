@@ -207,16 +207,9 @@ class Pipeline:
     def run(self) -> None:
         """Run the pipeline."""
         start_time = time.time()
-        timings = {
-            "preprocessing": time_function(self.preprocess)(),
-            "pairs-extraction": time_function(self.get_pairs)(),
-            "feature-extraction": time_function(self.extract_features)(),
-            "feature-matching": time_function(self.match_features)(),
-            "sfm": time_function(self.sfm)(),
-            "refinement": time_function(self.refinement)(),
-            "mvs": time_function(self.mvs)(),
-            "postprocessing": time_function(self.postprocess)(),
-        }
+        timings = {}
+        for step in self.config.steps:
+            timings[step] = time_function(getattr(self, step))()
         total_time = time.time() - start_time
 
         logging.info("Timings:")
@@ -224,6 +217,7 @@ class Pipeline:
             logging.info(f"  {k}: {datetime.timedelta(seconds=v)} ({v / total_time:.2%})")
         logging.info(f"  Total: {datetime.timedelta(seconds=total_time)}")
 
+        self.paths.metrics.mkdir(exist_ok=True, parents=True)
         timings_path = self.paths.metrics / "timings.json"
         with open(timings_path, "w") as f:
             json.dump(timings, f, indent=4)

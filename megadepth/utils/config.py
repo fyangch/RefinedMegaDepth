@@ -4,6 +4,7 @@ import logging
 
 from omegaconf import DictConfig, OmegaConf
 
+from megadepth.pipelines.pipeline import Pipeline
 from megadepth.utils.constants import Features, Matcher, Retrieval
 
 
@@ -18,9 +19,15 @@ def check_config(config: DictConfig) -> None:
     if config.retrieval.name not in [r.value for r in Retrieval]:
         raise ValueError(f"Invalid retrieval name: {config.retrieval.name}")
     if config.features not in [f.value for f in Features]:
-        raise ValueError(f"Invalid feature name: {config.features}")
+        raise ValueError(f"Invalid features name: {config.features}")
     if config.matcher not in [m.value for m in Matcher]:
         raise ValueError(f"Invalid matcher name: {config.matcher}")
+
+    # check if the pipeline steps in the config are valid methods
+    methods = [name for name in dir(Pipeline) if callable(getattr(Pipeline, name))]
+    for step in config.steps:
+        if step not in methods:
+            raise ValueError(f"Invalid pipeline step: {step}")
 
     logging.debug("Config values:")
     logging.debug(OmegaConf.to_yaml(config))
