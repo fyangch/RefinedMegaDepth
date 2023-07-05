@@ -120,7 +120,7 @@ class DataPaths:
 
         # paths
         self.data = Path(os.path.join(args.data_path, args.scene))
-        self.images = Path(os.path.join(self.data, args.image_dir))
+        self.images = Path(os.path.join(self.data, "images"))
 
         # retrieval
         self.features_retrieval = Path(os.path.join(self.data, "features", f"{args.retrieval}.h5"))

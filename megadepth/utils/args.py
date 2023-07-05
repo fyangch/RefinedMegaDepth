@@ -27,12 +27,6 @@ def setup_args() -> argparse.Namespace:
         required=True,
         help="The scene to be processed.",
     )
-    parser.add_argument(
-        "--image_dir",
-        type=Path,
-        default="images",
-        help="Name of the image directory inside the scene directory.",
-    )
 
     # MODEL RELATED ARGUMENTS
     parser.add_argument(

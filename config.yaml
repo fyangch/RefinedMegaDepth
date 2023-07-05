@@ -1,0 +1,32 @@
+data_path: data
+
+steps:
+- preprocess
+- get_pairs
+- extract_features
+- match_features
+- sfm
+- refinement
+- mvs
+- postprocess
+- collect_metrics # TODO: this should be a pipeline step imo
+
+retrieval:
+  name: netvlad
+  n_matches: 50
+
+# TODO: add support for ensembles
+features: superpoint_max
+matcher: superglue
+
+refinement:
+  steps: KA+BA
+  low_memory: false
+
+overwrite: true
+evaluate: true
+
+logging:
+  log_dir: logs
+  log_level: INFO
+  verbose: false
