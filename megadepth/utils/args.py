@@ -31,49 +31,7 @@ def setup_args() -> argparse.Namespace:
         "--image_dir",
         type=Path,
         default="images",
-        help="Path to the images.",
-    )
-    parser.add_argument(
-        "--features_dir",
-        type=Path,
-        default="features",
-        help="Path to the metadata.",
-    )
-    parser.add_argument(
-        "--matches_dir",
-        type=Path,
-        default="matches",
-        help="Path to the sparse model.",
-    )
-    parser.add_argument(
-        "--sparse_dir",
-        type=Path,
-        default="sparse",
-        help="Path to the sparse model.",
-    )
-    parser.add_argument(
-        "--dense_dir",
-        type=Path,
-        default="dense",
-        help="Path to the dense model.",
-    )
-    parser.add_argument(
-        "--metrics_dir",
-        type=Path,
-        default="metrics",
-        help="Path to the metrics.",
-    )
-    parser.add_argument(
-        "--results_dir",
-        type=Path,
-        default="results",
-        help="Path to the results.",
-    )
-    parser.add_argument(
-        "--visualizations_dir",
-        type=Path,
-        default="visualizations",
-        help="Path to the visualizations.",
+        help="Name of the image directory inside the scene directory.",
     )
 
     # MODEL RELATED ARGUMENTS

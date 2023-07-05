@@ -123,40 +123,32 @@ class DataPaths:
         self.images = Path(os.path.join(self.data, args.image_dir))
 
         # retrieval
-        self.features_retrieval = Path(
-            os.path.join(self.data, args.features_dir, f"{args.retrieval}.h5")
-        )
+        self.features_retrieval = Path(os.path.join(self.data, "features", f"{args.retrieval}.h5"))
         self.matches_retrieval = Path(
-            os.path.join(self.data, args.matches_dir, "retrieval", retrieval_name)
+            os.path.join(self.data, "matches", "retrieval", retrieval_name)
         )
 
         # features
         if args.matcher == Matcher.LOFTR.value:
-            self.features = Path(
-                os.path.join(self.data, args.features_dir, f"{self.model_name}.h5")
-            )
+            self.features = Path(os.path.join(self.data, "features", f"{self.model_name}.h5"))
         else:
-            self.features = Path(os.path.join(self.data, args.features_dir, f"{args.features}.h5"))
+            self.features = Path(os.path.join(self.data, "features", f"{args.features}.h5"))
 
         # matches
-        self.matches = Path(os.path.join(self.data, args.matches_dir, f"{self.model_name}.h5"))
+        self.matches = Path(os.path.join(self.data, "matches", f"{self.model_name}.h5"))
 
         # models
-        self.sparse = Path(os.path.join(self.data, args.sparse_dir, self.model_name))
-        self.sparse_baseline = Path(os.path.join(self.data, args.sparse_dir, "baseline"))
-        self.refined_sparse = Path(
-            os.path.join(self.data, args.sparse_dir, self.model_name, "refined")
-        )
+        self.sparse = Path(os.path.join(self.data, "sparse", self.model_name))
+        self.sparse_baseline = Path(os.path.join(self.data, "sparse", "baseline"))
+        self.refined_sparse = Path(os.path.join(self.data, "sparse", self.model_name, "refined"))
         self.db = Path(os.path.join(self.sparse, "database.db"))
-        self.dense = Path(os.path.join(self.data, args.dense_dir, self.model_name))
-        self.baseline_model = Path(os.path.join(self.data, args.sparse_dir, "baseline"))
+        self.dense = Path(os.path.join(self.data, "dense", self.model_name))
+        self.baseline_model = Path(os.path.join(self.data, "sparse", "baseline"))
 
         # output
-        self.metrics = Path(os.path.join(self.data, args.metrics_dir, self.model_name))
-        self.results = Path(os.path.join(self.data, args.results_dir, self.model_name))
-        self.visualizations = Path(
-            os.path.join(self.data, args.visualizations_dir, self.model_name)
-        )
+        self.metrics = Path(os.path.join(self.data, "metrics", self.model_name))
+        self.results = Path(os.path.join(self.data, "results", self.model_name))
+        self.visualizations = Path(os.path.join(self.data, "visualizations", self.model_name))
 
         # cache
         self.cache = None
