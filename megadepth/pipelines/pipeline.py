@@ -11,6 +11,7 @@ import pycolmap
 from hloc.reconstruction import create_empty_db, get_image_ids, import_images
 from omegaconf import DictConfig
 
+from megadepth.metrics.metadata import collect_metrics
 from megadepth.postprocessing.cleanup import refine_depth_maps
 from megadepth.utils.constants import ModelType
 from megadepth.utils.setup import DataPaths, get_configs
@@ -193,6 +194,15 @@ class Pipeline:
             depth_map_dir=self.paths.dense / "stereo" / "depth_maps",
             output_dir=self.paths.results,
         )
+
+    def compute_metrics(self) -> None:
+        """Compute various metrics for the results."""
+        if self.config.evaluate:
+            self.align_with_baseline()
+
+        collect_metrics(self.paths, self.config, model_type=ModelType.SPARSE)
+        collect_metrics(self.paths, self.config, model_type=ModelType.REFINED)
+        collect_metrics(self.paths, self.config, model_type=ModelType.DENSE)
 
     def run(self) -> None:
         """Run the pipeline."""

@@ -5,11 +5,10 @@ import logging
 import hydra
 from omegaconf import DictConfig
 
-from megadepth.metrics.metadata import collect_metrics
 from megadepth.pipelines.pipeline import Pipeline
 from megadepth.utils.config import check_config
-from megadepth.utils.constants import Matcher, ModelType
-from megadepth.utils.setup import DataPaths, setup_logger
+from megadepth.utils.constants import Matcher
+from megadepth.utils.setup import setup_logger
 
 
 @hydra.main(version_base=None, config_path="configs", config_name="config")
@@ -18,25 +17,10 @@ def main(config: DictConfig):
     setup_logger(config)
     check_config(config)
 
-    paths = DataPaths(config)
-
-    # create pipeline
+    # create and run pipeline
     pipeline = get_pipeline(config)
     logging.info(f"Pipeline: {type(pipeline).__name__}")
-
-    if config.evaluate:
-        pipeline.align_with_baseline()
-        collect_metrics(paths, config, ModelType.SPARSE)
-        collect_metrics(paths, config, ModelType.REFINED)
-        # collect_metrics(paths, config, ModelType.DENSE)
-        return
-
-    # run pipeline
     pipeline.run()
-
-    collect_metrics(paths, config, model_type=ModelType.SPARSE)
-    collect_metrics(paths, config, model_type=ModelType.REFINED)
-    # collect_metrics(paths, config, model_type=ModelType.DENSE)
 
 
 def get_pipeline(config: DictConfig) -> Pipeline:

@@ -10,7 +10,7 @@ steps:
 - refinement
 - mvs
 - postprocess
-- collect_metrics # TODO: this should be a pipeline step imo
+- compute_metrics
 
 retrieval:
   name: netvlad
@@ -21,12 +21,12 @@ features: superpoint_max
 matcher: superglue
 
 refinement:
-  steps: KA+BA
+  steps: "" # "", KA, BA or KA+BA
   low_memory: false
 
 colmap: false
 overwrite: true
-evaluate: false # TODO: remove this once collect_metrics is a pipeline step
+evaluate: false # set to true if there is a sparse baseline model
 
 logging:
   log_dir: logs
