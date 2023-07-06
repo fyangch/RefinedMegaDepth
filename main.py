@@ -8,14 +8,18 @@ from omegaconf import DictConfig
 from megadepth.pipelines.pipeline import Pipeline
 from megadepth.utils.config import check_config
 from megadepth.utils.constants import Matcher
-from megadepth.utils.setup import setup_logger
+from megadepth.utils.setup import get_model_name, set_up_logger, set_up_paths
 
 
 @hydra.main(version_base=None, config_path="configs", config_name="config")
 def main(config: DictConfig):
     """Run the mega depth pipeline."""
-    setup_logger(config)
+    set_up_logger(config)
     check_config(config)
+
+    if not config.model_name:
+        config.model_name = get_model_name(config)
+    config = set_up_paths(config)
 
     # create and run pipeline
     pipeline = get_pipeline(config)

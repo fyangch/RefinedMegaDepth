@@ -1,8 +1,6 @@
 """Functions to check the config values."""
 
-import logging
-
-from omegaconf import DictConfig, OmegaConf
+from omegaconf import DictConfig
 
 from megadepth.pipelines.pipeline import Pipeline
 from megadepth.utils.constants import Features, Matcher, Retrieval
@@ -28,6 +26,3 @@ def check_config(config: DictConfig) -> None:
     for step in config.steps:
         if step not in methods:
             raise ValueError(f"Invalid pipeline step: {step}")
-
-    logging.debug("Config values:")
-    logging.debug(OmegaConf.to_yaml(config))

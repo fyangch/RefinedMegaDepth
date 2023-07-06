@@ -14,7 +14,7 @@ from omegaconf import DictConfig
 from megadepth.metrics.metadata import collect_metrics
 from megadepth.postprocessing.cleanup import refine_depth_maps
 from megadepth.utils.constants import ModelType
-from megadepth.utils.setup import DataPaths, get_configs
+from megadepth.utils.setup import get_configs
 from megadepth.utils.utils import time_function
 from megadepth.visualization.view_projections import align_models
 
@@ -30,7 +30,7 @@ class Pipeline:
         """
         self.config = config
         self.configs = get_configs(config)
-        self.paths = DataPaths(config)
+        self.paths = config.paths
         self.n_images = len(os.listdir(self.paths.images))
         self.sparse_model: Optional[pycolmap.Reconstruction] = None
         self.refined_model: Optional[pycolmap.Reconstruction] = None

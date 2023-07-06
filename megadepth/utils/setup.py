@@ -12,8 +12,8 @@ from omegaconf import DictConfig, OmegaConf
 from megadepth.utils.constants import Matcher, Retrieval
 
 
-def setup_logger(config: DictConfig) -> None:
-    """Setup the logger.
+def set_up_logger(config: DictConfig) -> None:
+    """Set up the logger.
 
     Args:
         config (DictConfig): Config with values from the yaml file and CLI.
@@ -82,113 +82,65 @@ def get_configs(config: DictConfig) -> dict:
     }
 
 
-class DataPaths:
-    """Class for handling the data paths."""
+def get_model_name(config: DictConfig) -> str:
+    """Define the model name based on the config values.
 
-    def __init__(self, config: DictConfig) -> None:
-        """Initialize the data paths.
+    Args:
+        config (DictConfig): Config with values from the yaml file and CLI.
 
-        Args:
-            config (DictConfig): Config with values from the yaml file and CLI.
-        """
-        self.model_name = self.get_model_name(config)
+    Returns:
+        str: The model name.
+    """
+    refinement_suffix = f"-{config.refinement.steps}" if config.refinement.steps else ""
 
-        retrieval_name = f"{config.retrieval.name}"
-        retrieval_name += (
-            ".txt"
-            if config.retrieval.name == Retrieval.EXHAUSTIVE.value
-            else f"-{config.retrieval.n_matches}.txt"
+    if config.colmap:
+        return "colmap"
+    elif config.matcher == Matcher.LOFTR.value:
+        return (
+            f"{config.matcher}"
+            + f"-{config.retrieval.name}"
+            + f"-{config.retrieval.n_matches}"
+            + refinement_suffix
+        )
+    elif config.retrieval.name == Retrieval.EXHAUSTIVE.value:
+        return (
+            f"{config.features}"
+            + f"-{config.matcher}"
+            + f"-{config.retrieval.name}"
+            + refinement_suffix
+        )
+    else:
+        return (
+            f"{config.features}"
+            + f"-{config.matcher}"
+            + f"-{config.retrieval.name}"
+            + f"-{config.retrieval.n_matches}"
+            + refinement_suffix
         )
 
-        # paths
-        self.data = Path(os.path.join(config.data_path, config.scene))
-        self.images = Path(os.path.join(self.data, "images"))
 
-        # retrieval
-        self.features_retrieval = Path(
-            os.path.join(self.data, "features", f"{config.retrieval.name}.h5")
+def set_up_paths(config: DictConfig) -> DictConfig:
+    """Convert types to pathlib.Path and make some path adjustments if necessary.
+
+    Args:
+        config (DictConfig): Config with values from the yaml file and CLI.
+
+    Returns:
+        DictConfig: Config with final paths.
+    """
+    # this also makes sure that the results of the variable interpolations are fixed
+    # such that we can actually replace some parts of the paths below
+    for path in config.paths:
+        config.paths[path] = Path(config.paths[path])
+
+    # remove the n_matches part of the filename
+    if config.retrieval.name == Retrieval.EXHAUSTIVE.value:
+        config.paths.matches_retrieval = (
+            config.paths.matches_retrieval.parent / f"{config.retrieval.name}.txt"
         )
-        self.matches_retrieval = Path(
-            os.path.join(self.data, "matches", "retrieval", retrieval_name)
-        )
 
-        # features
-        if config.matcher == Matcher.LOFTR.value:
-            self.features = Path(os.path.join(self.data, "features", f"{self.model_name}.h5"))
-        else:
-            self.features = Path(os.path.join(self.data, "features", f"{config.features}.h5"))
+    # replace the features name by the model name
+    if config.matcher == Matcher.LOFTR.value:
+        config.paths.features = config.paths.features.parent / f"{config.model_name}.h5"
 
-        # matches
-        self.matches = Path(os.path.join(self.data, "matches", f"{self.model_name}.h5"))
-
-        # models
-        self.sparse = Path(os.path.join(self.data, "sparse", self.model_name))
-        self.sparse_baseline = Path(os.path.join(self.data, "sparse", "baseline"))
-        self.refined_sparse = Path(os.path.join(self.data, "sparse", self.model_name, "refined"))
-        self.db = Path(os.path.join(self.sparse, "database.db"))
-        self.dense = Path(os.path.join(self.data, "dense", self.model_name))
-        self.baseline_model = Path(os.path.join(self.data, "sparse", "baseline"))
-
-        # output
-        self.metrics = Path(os.path.join(self.data, "metrics", self.model_name))
-        self.results = Path(os.path.join(self.data, "results", self.model_name))
-        self.visualizations = Path(os.path.join(self.data, "visualizations", self.model_name))
-
-        # cache
-        self.cache = None
-        if config.refinement.low_memory:
-            cache_dir = os.environ.get("TMPDIR")
-            if cache_dir is None:
-                raise ValueError(
-                    "TMPDIR environment variable not set. "
-                    + "Set it using export TMPDIR=/path/to/tmpdir"
-                )
-
-            self.cache = Path(cache_dir)
-
-        logging.debug("Data paths:")
-        for path, val in vars(self).items():
-            logging.debug(f"\t{path}: {val}")
-
-    def get_model_name(self, config: DictConfig) -> str:
-        """Return the model name.
-
-        Args:
-            config (DictConfig): Config with values from the yaml file and CLI.
-
-        Returns:
-            str: The model name.
-        """
-        if "model_name" in config:
-            return config.model_name
-        elif config.colmap:
-            return "colmap"
-        elif config.matcher == Matcher.LOFTR.value:
-            return (
-                f"{config.matcher}"
-                + f"-{config.retrieval.name}"
-                + f"-{config.retrieval.n_matches}"
-                + f"-{config.refinement.steps}"
-            )
-        elif config.retrieval.name == Retrieval.EXHAUSTIVE.value:
-            return (
-                f"{config.features}"
-                + f"-{config.matcher}"
-                + f"-{config.retrieval.name}"
-                + f"-{config.refinement.steps}"
-            )
-        elif config.refinement.steps not in ["KA", "BA", "KA+BA"]:
-            return (
-                f"{config.features}"
-                + f"-{config.matcher}"
-                + f"-{config.retrieval.name}"
-                + f"-{config.retrieval.n_matches}"
-            )
-        else:
-            return (
-                f"{config.features}"
-                + f"-{config.matcher}"
-                + f"-{config.retrieval.name}"
-                + f"-{config.retrieval.n_matches}"
-                + f"-{config.refinement.steps}"
-            )
+    return config
