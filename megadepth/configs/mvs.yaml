@@ -1,0 +1,40 @@
+scene: ??? # mandatory value to be passed as a command line arg
+model_name: ""
+data_path: data
+
+# TODO: add support for ensembles
+defaults:
+  - paths
+  - ensembles:
+      - spsg
+      - sift
+  - retrieval:
+      - netvlad
+  - refinement:
+      - pixsfm_low_memory
+  - override hydra/job_logging: custom
+
+steps:
+  # - preprocess
+  # - get_pairs
+  # - extract_features
+  # - match_features
+  # - sfm
+  - mvs
+  - postprocess
+  - compute_metrics
+
+preprocessing:
+  rotate_images: true
+
+retrieval:
+  n_matches: 50
+
+colmap: false
+overwrite: true
+evaluate: false # set to true if there is a sparse baseline model
+
+logging:
+  log_dir: logs
+  log_level: INFO
+  verbose: false

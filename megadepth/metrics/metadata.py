@@ -61,9 +61,9 @@ def collect_metrics(paths: DictConfig, config: DictConfig, model_type: str) -> D
     metrics["features"] = [ens.features.name for ens in config.ensembles.values()]
     metrics["matchers"] = [ens.matchers.name for ens in config.ensembles.values()]
 
-    logging.debug(f"Metrics for {model_type} model:")
+    logging.info(f"Metrics for {model_type} model:")
     for k, v in metrics.items():
-        logging.debug(f"\t{k}: {v}")
+        logging.info(f"\t{k}: {v}")
 
     os.makedirs(paths.metrics, exist_ok=True)
 

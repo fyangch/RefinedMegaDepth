@@ -17,7 +17,7 @@ from tqdm import tqdm
 
 
 def delete_problematic_images(paths: DictConfig) -> None:
-    """Remove corrupted and other problematic images
+    """Remove corrupted and other problematic images.
 
     Args:
         paths (DictConfig): Data paths.
@@ -56,6 +56,7 @@ def rotate_images(paths: DictConfig) -> None:
     transform = albu.Compose([albu.Resize(height=224, width=224), albu.Normalize()])
     image_paths = [paths.images / fn for fn in os.listdir(paths.images)]
 
+    n_rotated = 0
     for path in tqdm(image_paths, desc="Rotating images...", ncols=80):
         image = transform(image=load_rgb(path))["image"]
         tensor = tensor_from_rgb_image(image)
@@ -65,6 +66,8 @@ def rotate_images(paths: DictConfig) -> None:
         orientation = np.argmax(pred)
         if orientation == 0:
             continue
+
+        n_rotated += 1
 
         # rotate image to fix orientation
         original_img = cv2.imread(str(path))
@@ -79,3 +82,5 @@ def rotate_images(paths: DictConfig) -> None:
             logging.info(f"Rotating image at {path} by 270°")
 
         cv2.imwrite(str(path), rotated_img)
+
+    logging.info(f"Rotated {n_rotated} ({n_rotated / len(image_paths) * 100:.2f}%) images.")
