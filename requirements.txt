@@ -5,4 +5,5 @@ pandas
 scikit-image
 transformers
 hydra-core
+check_orientation
 git+https://github.com/CSAILVision/semantic-segmentation-pytorch.git@master

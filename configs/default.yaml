@@ -24,6 +24,9 @@ steps:
   - postprocess
   - compute_metrics
 
+preprocessing:
+  rotate_images: true
+
 retrieval:
   n_matches: 50
 

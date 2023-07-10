@@ -8,11 +8,11 @@ from abc import abstractmethod
 from typing import Optional
 
 import pycolmap
-from hloc.reconstruction import create_empty_db, get_image_ids, import_images
 from omegaconf import DictConfig
 
 from megadepth.metrics.metadata import collect_metrics
 from megadepth.postprocessing.cleanup import refine_depth_maps
+from megadepth.utils.preprocessing import delete_problematic_images, rotate_images
 from megadepth.utils.utils import time_function
 
 
@@ -43,26 +43,13 @@ class Pipeline:
         logging.info(f"{'=' * 80}")
 
     def preprocess(self) -> None:
-        """Remove corrupted and other problematic images as a preprocessing step."""
+        """Preprocess all images."""
         self.log_step("Preprocessing images...")
 
-        # create dummy database and try to import all images
-        database = self.paths.data / "tmp_database.db"
-        create_empty_db(database)
-        import_images(self.paths.images, database, pycolmap.CameraMode.AUTO)
-        image_ids = get_image_ids(database)
+        delete_problematic_images(self.paths)
 
-        logging.debug(f"Successfully imported {len(image_ids)} valid images.")
-
-        # delete image files that were not successfully imported
-        image_fns = [fn for fn in os.listdir(self.paths.images) if fn not in image_ids]
-        for fn in image_fns:
-            path = self.paths.images / fn
-            logging.info(f"Deleting invalid image at {path}")
-            path.unlink()
-
-        # delete dummy database
-        database.unlink()
+        if self.config.preprocessing.rotate_images:
+            rotate_images(self.paths)
 
     @abstractmethod
     def get_pairs(self) -> None:
