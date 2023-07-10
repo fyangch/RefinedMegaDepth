@@ -1,0 +1,3 @@
+defaults:
+  - features/sift@sift.features
+  - matchers/nn_ratio@sift.matchers

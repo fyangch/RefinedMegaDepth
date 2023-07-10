@@ -5,10 +5,13 @@ import os
 from hloc import match_dense
 from omegaconf import DictConfig
 
-from megadepth.pipelines.pixsfm import PixSfMPipeline
+from megadepth.pipelines.pipeline import Pipeline
+
+# TODO: adjust config and main function to work for dense pipeline
+# potentially inherit from SparsePipeline class
 
 
-class LoftrPipeline(PixSfMPipeline):
+class DensePipeline(Pipeline):
     """HLoc-based pipeline for LoFTR."""
 
     def __init__(self, config: DictConfig) -> None:
@@ -25,7 +28,7 @@ class LoftrPipeline(PixSfMPipeline):
         self.log_step("Matching and extracting features...")
 
         logging.debug("Matching and extracting features with LoFTR")
-        logging.debug(f"Matcher config: {self.configs['matcher']}")
+        logging.debug(f"Matcher config: {self.config['matcher']}")
         logging.debug(f"Loading pairs from {self.paths.matches_retrieval}")
         logging.debug(f"Storing matches to {self.paths.matches}")
         logging.debug(f"Storing features to {self.paths.features}")
@@ -34,7 +37,7 @@ class LoftrPipeline(PixSfMPipeline):
         os.makedirs(self.paths.features.parent, exist_ok=True)
 
         match_dense.main(
-            conf=self.configs["matcher"],
+            conf=self.config["matcher"],
             image_dir=self.paths.images,
             pairs=self.paths.matches_retrieval,
             features=self.paths.features,

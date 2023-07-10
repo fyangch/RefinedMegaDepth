@@ -1,0 +1,3 @@
+defaults:
+  - features/superpoint@spsg.features
+  - matchers/superglue@spsg.matchers

@@ -13,10 +13,9 @@ from omegaconf import DictConfig
 
 from megadepth.metrics.nighttime import run_day_night_classification
 from megadepth.metrics.overlap import dense_overlap, sparse_overlap
-from megadepth.utils.constants import ModelType
 
 
-def collect_metrics(paths: DictConfig, config: DictConfig, model_type: ModelType) -> Dict[str, Any]:
+def collect_metrics(paths: DictConfig, config: DictConfig, model_type: str) -> Dict[str, Any]:
     """Collect metrics for a COLMAP reconstruction.
 
     Args:
@@ -27,7 +26,11 @@ def collect_metrics(paths: DictConfig, config: DictConfig, model_type: ModelType
     Returns:
         A list of dictionaries containing the metrics.
     """
-    if model_type == ModelType.SPARSE:
+    if model_type == "dense":
+        reconstruction = pycolmap.Reconstruction(os.path.join(paths.dense, "sparse"))
+        depth_map_path = os.path.join(paths.dense, "stereo", "depth_maps")
+        metrics, overlap = collect_dense(reconstruction, depth_map_path)
+    elif model_type == "sparse":
         reconstruction = pycolmap.Reconstruction(paths.sparse)
         metrics, overlap = collect_sparse(reconstruction)
 
@@ -37,23 +40,12 @@ def collect_metrics(paths: DictConfig, config: DictConfig, model_type: ModelType
             [img for img in reconstruction.images.values() if night_df.loc[img.name, "is_night"]]
         )
         night_df.to_csv(os.path.join(paths.metrics, "night_images.csv"))
-    elif model_type == ModelType.REFINED:
-        reconstruction = pycolmap.Reconstruction(paths.refined_sparse)
-        metrics, overlap = collect_sparse(reconstruction)
-    elif model_type == ModelType.DENSE:
-        reconstruction = pycolmap.Reconstruction(os.path.join(paths.dense, "sparse"))
-        depth_map_path = os.path.join(paths.dense, "stereo", "depth_maps")
-        metrics, overlap = collect_dense(reconstruction, depth_map_path)
     else:
         raise ValueError(f"Unknown model type: {model_type}")
 
     # number of images
     n_images = len(
-        [
-            img
-            for img in os.listdir(paths.images)
-            if img.endswith(".jpg") or img.endswith(".JPG") or img.endswith(".png")
-        ]
+        [img for img in os.listdir(paths.images) if not os.path.isdir(paths.images / img)]
     )
     metrics["n_images"] = n_images
     metrics["perc_reg_images"] = metrics["n_reg_images"] / n_images * 100
@@ -63,13 +55,13 @@ def collect_metrics(paths: DictConfig, config: DictConfig, model_type: ModelType
 
     # add pipeline information
     metrics["scene"] = str(config.scene)
-    metrics["model_name"] = paths.model_name
+    metrics["model_name"] = config.model_name
     metrics["retrieval"] = config.retrieval.name
     metrics["n_retrieval_matches"] = config.retrieval.n_matches
-    metrics["features"] = config.features
-    metrics["matcher"] = config.matcher
+    metrics["features"] = [ens.features.name for ens in config.ensembles.values()]
+    metrics["matchers"] = [ens.matchers.name for ens in config.ensembles.values()]
 
-    logging.debug(f"Metrics for {model_type.value} model:")
+    logging.debug(f"Metrics for {model_type} model:")
     for k, v in metrics.items():
         logging.debug(f"\t{k}: {v}")
 
@@ -77,12 +69,12 @@ def collect_metrics(paths: DictConfig, config: DictConfig, model_type: ModelType
 
     timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
-    overlap_fn = f"{model_type.value}-overlap-{timestamp}.npy"
+    overlap_fn = f"{model_type}-overlap-{timestamp}.npy"
     metrics["overlap_fn"] = overlap_fn
     with open(os.path.join(paths.metrics, overlap_fn), "wb") as f_overlap:
         np.save(f_overlap, overlap)
 
-    with open(os.path.join(paths.metrics, f"{model_type.value}-{timestamp}.json"), "w") as f_metric:
+    with open(os.path.join(paths.metrics, f"{model_type}-{timestamp}.json"), "w") as f_metric:
         json.dump(metrics, f_metric, indent=4)
 
     return metrics

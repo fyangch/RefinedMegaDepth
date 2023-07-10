@@ -1,0 +1,8 @@
+name: disk
+output: feats-disk
+model:
+  name: disk
+  max_keypoints: 5000
+preprocessing:
+  grayscale: false
+  resize_max: 1600
