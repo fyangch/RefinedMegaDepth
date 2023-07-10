@@ -1,0 +1,22 @@
+paths:
+  data: ${..data_path}/${..scene}
+  images: ${.data}/images
+
+  features_retrieval: ${.data}/features/${..retrieval.name}.h5
+  matches_retrieval: ${.data}/matches/retrieval/${..retrieval.name}-${..retrieval.n_matches}.txt
+
+  features: ${.data}/features/${..features}.h5
+  matches: ${.data}/matches/${..model_name}.h5
+
+  sparse: ${.data}/sparse/${..model_name}
+  sparse_baseline: ${.data}/sparse/baseline
+  refined_sparse: ${.data}/sparse/${..model_name}/refined
+  db: ${.sparse}/database.db
+  dense: ${.data}/dense/${..model_name}
+  baseline_model: ${.data}/sparse/baseline
+
+  metrics: ${.data}/metrics/${..model_name}
+  results: ${.data}/results/${..model_name}
+  visualizations: ${.data}/visualizations/${..model_name}
+
+  cache: cache
