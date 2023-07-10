@@ -16,6 +16,9 @@ steps:
 - postprocess
 - compute_metrics
 
+preprocessing:
+  rotate_images: true
+
 retrieval:
   name: netvlad
   n_matches: 50
