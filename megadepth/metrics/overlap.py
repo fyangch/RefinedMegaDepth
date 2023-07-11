@@ -6,6 +6,7 @@ from typing import Union
 
 import numpy as np
 import pycolmap
+import xarray as xr
 from tqdm import tqdm
 
 from megadepth.utils.io import load_depth_map
@@ -13,11 +14,12 @@ from megadepth.utils.projections import backward_project, forward_project
 from megadepth.utils.utils import camera_pixel_grid
 
 
-def sparse_overlap(reconstruction: pycolmap.Reconstruction) -> np.ndarray:
+def sparse_overlap(reconstruction: pycolmap.Reconstruction) -> xr.DataArray:
     """Computes the sparse overlap metric between a list of images.
 
-    For each pair of images (i,j), this score indicates the fraction of sparse features in image i
-    that are also contained in the image j. If i=j, the score is simply 1.
+    For each pair of images (i,j), this score indicates the percentage of sparse features in image i
+    that are also contained in the image j. If i=j, the score is simply 100. Each score is an
+    integer in the range [0, 100].
     The computation of this score is based on:
     https://github.com/mihaidusmanu/d2-net/blob/master/megadepth_utils/preprocess_scene.py#L202
 
@@ -25,19 +27,21 @@ def sparse_overlap(reconstruction: pycolmap.Reconstruction) -> np.ndarray:
         reconstruction (pycolmap.Reconstruction): Reconstruction object.
 
     Returns:
-        np.ndarray: Array of shape (N, N) with the overlap metric between each pair of images.
+        xr.DataArray: DataArray of shape (N, N) with the overlap metric between each pair of images.
     """
     images = reconstruction.images
     N = len(images)
+    image_fns = []
 
     # pre-compute hash sets with 3D point IDs for faster lookups later
     img_to_ids = {}
     for i, k in enumerate(images.keys()):
         img = images[k]
         img_to_ids[i] = {p.point3D_id for p in img.get_valid_points2D()}
+        image_fns.append(img.name)
 
     # compute overlap scores for each image pair
-    scores = np.ones((N, N))
+    scores = np.full((N, N), 100, dtype=np.int8)
     for i in tqdm(range(N)):
         for j in range(i + 1, N):
             # compute number of common 3D point IDs
@@ -46,10 +50,12 @@ def sparse_overlap(reconstruction: pycolmap.Reconstruction) -> np.ndarray:
             n_common_ids = len(ids_1.intersection(ids_2))
 
             # set overlap scores
-            scores[i, j] = n_common_ids / len(ids_1)
-            scores[j, i] = n_common_ids / len(ids_2)
+            scores[i, j] = np.rint(100 * n_common_ids / len(ids_1))
+            scores[j, i] = np.rint(100 * n_common_ids / len(ids_2))
 
-    return scores
+    # create and return data array
+    coords = {"img1": image_fns, "img2": image_fns}
+    return xr.DataArray(scores, coords=coords, dims=coords.keys())
 
 
 def dense_overlap(

@@ -51,7 +51,7 @@ def collect_metrics(paths: DictConfig, config: DictConfig, model_type: str) -> D
     metrics["perc_reg_images"] = metrics["n_reg_images"] / n_images * 100
 
     # mean overlap
-    metrics["mean_overlap"] = np.mean(overlap)
+    metrics["mean_overlap"] = np.mean(overlap.data)
 
     # add pipeline information
     metrics["scene"] = str(config.scene)
@@ -69,10 +69,9 @@ def collect_metrics(paths: DictConfig, config: DictConfig, model_type: str) -> D
 
     timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
-    overlap_fn = f"{model_type}-overlap-{timestamp}.npy"
+    overlap_fn = f"{model_type}-overlap-{timestamp}.nc"
+    overlap.to_netcdf(os.path.join(paths.metrics, overlap_fn))
     metrics["overlap_fn"] = overlap_fn
-    with open(os.path.join(paths.metrics, overlap_fn), "wb") as f_overlap:
-        np.save(f_overlap, overlap)
 
     with open(os.path.join(paths.metrics, f"{model_type}-{timestamp}.json"), "w") as f_metric:
         json.dump(metrics, f_metric, indent=4)
