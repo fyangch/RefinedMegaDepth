@@ -1,0 +1,3 @@
+defaults:
+  - features/disk@disk.features
+  - matchers/lightglue_disk@disk.matchers

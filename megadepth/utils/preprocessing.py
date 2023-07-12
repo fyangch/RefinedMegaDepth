@@ -73,13 +73,13 @@ def rotate_images(paths: DictConfig) -> None:
         original_img = cv2.imread(str(path))
         if orientation == 1:
             rotated_img = cv2.rotate(original_img, cv2.ROTATE_90_CLOCKWISE)
-            logging.info(f"Rotating image at {path} by 90°")
+            logging.debug(f"Rotating image at {path} by 90°")
         elif orientation == 2:
             rotated_img = cv2.rotate(original_img, cv2.ROTATE_180)
-            logging.info(f"Rotating image at {path} by 180°")
+            logging.debug(f"Rotating image at {path} by 180°")
         else:
             rotated_img = cv2.rotate(original_img, cv2.ROTATE_90_COUNTERCLOCKWISE)
-            logging.info(f"Rotating image at {path} by 270°")
+            logging.debug(f"Rotating image at {path} by 270°")
 
         cv2.imwrite(str(path), rotated_img)
 

@@ -1,0 +1,3 @@
+defaults:
+  - features/superpoint@splg.features
+  - matchers/lightglue_sp@splg.matchers

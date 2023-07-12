@@ -1,0 +1,5 @@
+name: lightglue_disk
+output: "matches-disk-lightglue"
+model:
+  name: lightglue
+  features: disk

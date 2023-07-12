@@ -1,0 +1,5 @@
+name: lightglue_sg
+output: "matches-superpoint-lightglue"
+model:
+  name: lightglue
+  features: superpoint

@@ -3,7 +3,7 @@
 import logging
 
 import hydra
-from omegaconf import DictConfig
+from omegaconf import DictConfig, OmegaConf
 
 from megadepth.pipelines.sparse_pipeline import SparsePipeline
 from megadepth.utils.configure import check_config, get_model_name, set_up_paths
@@ -12,7 +12,8 @@ from megadepth.utils.configure import check_config, get_model_name, set_up_paths
 @hydra.main(version_base=None, config_path="megadepth/configs", config_name="default")
 def main(config: DictConfig):
     """Run the mega depth pipeline."""
-    # print(OmegaConf.to_yaml(config))
+    print(OmegaConf.to_yaml(config))
+
     if not config.model_name:
         config.model_name = get_model_name(config)
     config = set_up_paths(config)
