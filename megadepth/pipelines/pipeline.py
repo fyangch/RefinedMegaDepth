@@ -116,7 +116,7 @@ class Pipeline:
         self.paths.metrics.mkdir(exist_ok=True, parents=True)
 
         collect_metrics(self.paths, self.config, model_type="sparse")
-        # collect_metrics(self.paths, self.config, model_type=ModelType.DENSE)
+        collect_metrics(self.paths, self.config, model_type="dense")
 
     def run(self) -> None:
         """Run the pipeline."""
