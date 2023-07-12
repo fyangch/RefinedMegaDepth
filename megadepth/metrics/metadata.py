@@ -4,8 +4,7 @@ import datetime
 import json
 import logging
 import os
-from pathlib import Path
-from typing import Any, Dict, Tuple, Union
+from typing import Any, Dict, Tuple
 
 import numpy as np
 import pycolmap
@@ -28,8 +27,7 @@ def collect_metrics(paths: DictConfig, config: DictConfig, model_type: str) -> D
     """
     if model_type == "dense":
         reconstruction = pycolmap.Reconstruction(os.path.join(paths.dense, "sparse"))
-        depth_map_path = os.path.join(paths.dense, "stereo", "depth_maps")
-        metrics, overlap = collect_dense(reconstruction, depth_map_path)
+        metrics, overlap = collect_dense(reconstruction, paths)
     elif model_type == "sparse":
         reconstruction = pycolmap.Reconstruction(paths.sparse)
         metrics, overlap = collect_sparse(reconstruction)
@@ -51,7 +49,7 @@ def collect_metrics(paths: DictConfig, config: DictConfig, model_type: str) -> D
     metrics["perc_reg_images"] = metrics["n_reg_images"] / n_images * 100
 
     # mean overlap
-    metrics["mean_overlap"] = np.mean(overlap)
+    metrics["mean_overlap"] = np.mean(overlap.data)
 
     # add pipeline information
     metrics["scene"] = str(config.scene)
@@ -69,10 +67,9 @@ def collect_metrics(paths: DictConfig, config: DictConfig, model_type: str) -> D
 
     timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
-    overlap_fn = f"{model_type}-overlap-{timestamp}.npy"
+    overlap_fn = f"{model_type}-overlap-{timestamp}.nc"
+    overlap.to_netcdf(os.path.join(paths.metrics, overlap_fn))
     metrics["overlap_fn"] = overlap_fn
-    with open(os.path.join(paths.metrics, overlap_fn), "wb") as f_overlap:
-        np.save(f_overlap, overlap)
 
     with open(os.path.join(paths.metrics, f"{model_type}-{timestamp}.json"), "w") as f_metric:
         json.dump(metrics, f_metric, indent=4)
@@ -102,13 +99,13 @@ def collect_sparse(reconstruction: pycolmap.Reconstruction) -> Tuple[Dict[str, A
 
 
 def collect_dense(
-    reconstruction: pycolmap.Reconstruction, depth_map_path: Union[Path, str]
+    reconstruction: pycolmap.Reconstruction, paths: DictConfig
 ) -> Tuple[Dict[str, Any], np.ndarray]:
     """Collect metrics for a dense COLMAP reconstruction.
 
     Args:
         reconstruction: The dense reconstruction.
-        depth_map_path: Path to the directory that contains the depth maps.
+        paths: The data paths for the reconstruction.
 
     Returns:
         A dictionary containing the metrics and a numpy array containing the overlap scores.
@@ -122,6 +119,6 @@ def collect_dense(
     }
     # TODO: add metrics if we loose some images during dense reconstruction
 
-    overlap = dense_overlap(reconstruction, depth_map_path)
+    overlap = dense_overlap(paths)
 
     return metrics, overlap
