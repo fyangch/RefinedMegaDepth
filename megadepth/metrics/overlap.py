@@ -2,7 +2,7 @@
 
 import os
 from pathlib import Path
-from typing import Union
+from typing import Optional, Union
 
 import numpy as np
 import pycolmap
@@ -31,18 +31,17 @@ def sparse_overlap(reconstruction: pycolmap.Reconstruction) -> xr.DataArray:
     """
     images = reconstruction.images
     N = len(images)
-    image_fns = []
+    image_fns = [images[k].name for k in images.keys()]
 
     # pre-compute hash sets with 3D point IDs for faster lookups later
     img_to_ids = {}
     for i, k in enumerate(images.keys()):
         img = images[k]
         img_to_ids[i] = {p.point3D_id for p in img.get_valid_points2D()}
-        image_fns.append(img.name)
 
     # compute overlap scores for each image pair
     scores = np.full((N, N), 100, dtype=np.int8)
-    for i in tqdm(range(N)):
+    for i in tqdm(range(N), desc="Computing sparse overlap...", ncols=80):
         for j in range(i + 1, N):
             # compute number of common 3D point IDs
             ids_1 = img_to_ids[i]
@@ -55,7 +54,7 @@ def sparse_overlap(reconstruction: pycolmap.Reconstruction) -> xr.DataArray:
 
     # create and return data array
     coords = {"img1": image_fns, "img2": image_fns}
-    return xr.DataArray(scores, coords=coords, dims=coords.keys())
+    return xr.DataArray(scores, coords=coords, dims=["img1", "img2"])
 
 
 def dense_overlap(
@@ -63,13 +62,14 @@ def dense_overlap(
     depth_path: Union[Path, str],
     downsample: int = 50,
     rel_thresh: float = 0.03,
-    cosine_weighted=False,
-    normal_path: Union[Path, str] = "None",
-) -> np.ndarray:
+    cosine_weighted: bool = False,
+    normal_path: Optional[Union[Path, str]] = None,
+) -> xr.DataArray:
     """Computes the dense overlap metric between a list of images.
 
     For each pair of images (i,j), this score indicates the fraction of dense features in image i
-    that are also contained in the image j. If i=j, the score is simply 1.
+    that are also contained in the image j. If i=j, the score is simply 100. Each score is an
+    integer in the range [0, 100].
 
     Args:
         reconstruction (pycolmap.Reconstruction): Reconstruction object.
@@ -77,17 +77,21 @@ def dense_overlap(
         downsample (int, optional): By which factor to downsample depth maps.
         rel_thresh (float, optional): Dense points with an absolute relative depth error below this
             threshold are considered as inliers.
+        cosine_weighted (bool): Whether to cosine-weight the overlap scores. Defaults to False.
+        normal_path (Optional[Union[Path, str]]): Path to the directory that contains the normal
+            maps. Required if `cosine_weighted` is set to True.
 
     Returns:
-        np.ndarray: Array of shape (N, N) with the overlap metric between each pair of images.
+        xr.DataArray: DataArray of shape (N, N) with the overlap metric between each pair of images.
     """
     cameras = reconstruction.cameras
     images = reconstruction.images
     N = len(images)
+    image_fns = [images[k].name for k in images.keys()]
 
     # compute overlap scores for each image pair
-    scores = np.ones((N, N))
-    for i, k1 in enumerate(tqdm(images.keys())):
+    scores = np.full((N, N), 100, dtype=np.int8)
+    for i, k1 in enumerate(tqdm(images.keys(), desc="Computing dense overlap...", ncols=80)):
         # load first image, camera and depth map
         image_1 = images[k1]
         camera_1 = cameras[image_1.camera_id]
@@ -139,10 +143,10 @@ def dense_overlap(
             abs_rel_error = np.abs(depth_2 / proj_depths - 1.0)
             if cosine_weighted:
                 normal_map_1 = load_depth_map(
-                    os.path.join(normal_path, f"{image_1.name}.geometric.bin")
+                    os.path.join(str(normal_path), f"{image_1.name}.geometric.bin")
                 )
                 normal_map_2 = load_depth_map(
-                    os.path.join(normal_path, f"{image_2.name}.geometric.bin")
+                    os.path.join(str(normal_path), f"{image_2.name}.geometric.bin")
                 )
                 norm_1 = normal_map_1[
                     points_2d[proj_mask][:, 1].astype(int), points_2d[proj_mask][:, 0].astype(int)
@@ -154,6 +158,8 @@ def dense_overlap(
                 n_inliners = np.count_nonzero(abs_rel_error < rel_thresh)
 
             # final score
-            scores[i, j] = n_inliners / n_features
+            scores[i, j] = np.rint(100 * n_inliners / n_features)
 
-    return scores
+    # create and return data array
+    coords = {"img1": image_fns, "img2": image_fns}
+    return xr.DataArray(scores, coords=coords, dims=["img1", "img2"])
