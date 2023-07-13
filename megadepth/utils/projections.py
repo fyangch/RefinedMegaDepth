@@ -1,6 +1,6 @@
 """Projection functions."""
 
-from typing import Tuple, Union
+from typing import Tuple
 
 import numpy as np
 import pycolmap
@@ -12,7 +12,7 @@ def forward_project(
     points_3d: np.ndarray,
     image: pycolmap.Image,
     camera: pycolmap.Camera,
-) -> Union[np.ndarray, Tuple[np.ndarray, np.ndarray], Tuple[np.ndarray, np.ndarray, np.ndarray]]:
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """Project array of 3D points onto the given image. Invalid points are discarded.
 
     Args:

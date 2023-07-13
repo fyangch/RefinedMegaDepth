@@ -6,8 +6,9 @@ data_path: data
 defaults:
   - paths
   - ensembles:
-      - spsg
+      - splg
       - sift
+      - disk
   - retrieval:
       - netvlad
   - refinement:
@@ -30,9 +31,7 @@ preprocessing:
 retrieval:
   n_matches: 50
 
-colmap: false
-overwrite: true
-evaluate: false # set to true if there is a sparse baseline model
+overwrite: false
 
 logging:
   log_dir: logs

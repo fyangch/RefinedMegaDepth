@@ -9,6 +9,7 @@ from typing import Any, Dict, Tuple
 import numpy as np
 import pycolmap
 from omegaconf import DictConfig
+from tqdm import tqdm
 
 from megadepth.metrics.nighttime import run_day_night_classification
 from megadepth.metrics.overlap import dense_overlap, sparse_overlap
@@ -98,6 +99,29 @@ def collect_sparse(reconstruction: pycolmap.Reconstruction) -> Tuple[Dict[str, A
     return metrics, overlap
 
 
+def calculate_completeness(reconstruction: pycolmap.Reconstruction, paths: DictConfig) -> float:
+    """Calculate the completeness of the dense maps.
+
+    Args:
+        reconstruction (pycolmap.Reconstruction): The sparse reconstruction.
+        paths (DictConfig): The data paths for the reconstruction.
+
+    Returns:
+        float: The completeness of the dense maps.
+    """
+    fnames = [img.name for img in reconstruction.images.values()]
+    vals = []
+    for fname in tqdm(fnames, desc="Calculating completeness", ncols=80):
+        if not os.path.exists(os.path.join(paths.dense, "stereo", fname)):
+            vals.append(0)
+            continue
+
+        depth = np.load(os.path.join(paths.dense, "stereo", fname))
+        vals.append(np.sum(depth > 0) / depth.size)
+
+    return np.mean(vals)
+
+
 def collect_dense(
     reconstruction: pycolmap.Reconstruction, paths: DictConfig
 ) -> Tuple[Dict[str, Any], np.ndarray]:
@@ -116,6 +140,7 @@ def collect_dense(
         "n_observations": reconstruction.compute_num_observations(),
         "mean_obs_per_reg_image": reconstruction.compute_mean_observations_per_reg_image(),
         "mean_track_length": reconstruction.compute_mean_track_length(),
+        "completeness": calculate_completeness(reconstruction, paths),
     }
     # TODO: add metrics if we loose some images during dense reconstruction
 

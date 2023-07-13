@@ -187,7 +187,7 @@ def dense_overlap(
     # compute overlap scores for each image pair
     scores = np.full((N, N), 100, dtype=np.int8)
     with ProcessPoolExecutor() as executor:
-        logging.info(f"Using {executor._max_workers} workers to compute the dense overlap.")
+        logging.info(f"Using {os.cpu_count()} workers to compute the dense overlap.")
 
         futures = [
             executor.submit(_compute_dense_row, i, k1, **kwargs)
