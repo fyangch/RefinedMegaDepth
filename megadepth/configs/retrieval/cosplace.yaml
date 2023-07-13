@@ -1,0 +1,6 @@
+name: cosplace
+output: global-feats-cosplace
+model:
+  name: cosplace
+preprocessing:
+  resize_max: 1024

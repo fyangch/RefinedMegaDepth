@@ -388,7 +388,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--color",
         type=int,
-        default=1,
+        default=-1,
         help="-1 does nothing, recolor all points with specified color index for tab10",
     )
     args = parser.parse_args()

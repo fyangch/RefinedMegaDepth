@@ -1,0 +1,12 @@
+defaults:
+  - default
+
+steps:
+  # - preprocess
+  # - get_pairs
+  # - extract_features
+  # - match_features
+  # - sfm
+  - mvs
+  - postprocess
+  - compute_metrics

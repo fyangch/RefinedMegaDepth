@@ -4,4 +4,7 @@ matplotlib
 pandas
 scikit-image
 transformers
+hydra-core
+check_orientation
+xarray
 git+https://github.com/CSAILVision/semantic-segmentation-pytorch.git@master

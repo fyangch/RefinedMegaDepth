@@ -1,0 +1,6 @@
+name: nn-ratio
+output: matches-NN-mutual-ratio.8
+model:
+  name: nearest_neighbor
+  do_mutual_check: true
+  ratio_threshold: 0.8

@@ -1,0 +1,7 @@
+name: sift
+output: feats-sift
+model:
+  name: dog
+preprocessing:
+  grayscale: true
+  resize_max: 1600

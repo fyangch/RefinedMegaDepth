@@ -34,7 +34,7 @@ def refine_depth_maps(
 
     model = get_segmentation_model(segmentation_model)
 
-    for image_fn in tqdm(os.listdir(image_dir)):
+    for image_fn in tqdm(os.listdir(image_dir), desc="Refining depth maps", ncols=80):
         image = Image.open(image_dir / image_fn).convert("RGB")
         depth_map = load_depth_map(os.path.join(depth_map_dir, f"{image_fn}.geometric.bin"))
 

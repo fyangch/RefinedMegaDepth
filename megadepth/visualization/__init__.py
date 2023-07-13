@@ -63,7 +63,7 @@ def create_all_figures(
         )
 
         if depth_path is not None:
-            dense_overlap_matrix = overlap.dense_overlap(reconstruction, depth_path=depth_path)
+            dense_overlap_matrix = overlap.dense_overlap({"dense": depth_path})
             view_overlap.show_matrix(
                 dense_overlap_matrix,
                 os.path.join(

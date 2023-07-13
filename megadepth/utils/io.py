@@ -1,14 +1,18 @@
 """Several helper functions for IO."""
 import argparse
-import glob
+
+# import glob
 import os
 from pathlib import Path
-from typing import List
 
 import numpy as np
+import pycolmap
 from PIL import Image
 
-from megadepth.utils.constants import ModelType
+# from typing import List
+
+
+# from megadepth.utils.constants import ModelType
 
 
 def load_image(image_path: str) -> np.ndarray:
@@ -20,7 +24,7 @@ def load_image(image_path: str) -> np.ndarray:
     Returns:
         np.ndarray: Image as a numpy array.
     """
-    img = Image.open(image_path)
+    img = Image.open(image_path).convert("RGB")
     return np.array(img)
 
 
@@ -33,15 +37,6 @@ def save_image(image: np.ndarray, image_path: str) -> None:
     """
     img = Image.fromarray(image)
     img.save(image_path)
-
-
-def make_gif(store_path: str, movie_path: str):
-    """Crashes when used with many more frames than 50."""
-    frames = [Image.open(image) for image in sorted(glob.glob(f"{store_path}/*.png"))]
-    frame_one = frames[0]
-    frame_one.save(
-        movie_path, format="GIF", append_images=frames, save_all=True, duration=10, loop=0
-    )
 
 
 def load_depth_map(path: str) -> np.array:
@@ -74,52 +69,6 @@ def load_depth_map(path: str) -> np.array:
     return np.transpose(array, (1, 0, 2)).squeeze()
 
 
-def get_scene_image_paths(scene: str, args: argparse.Namespace) -> List[str]:
-    """Return a list of image paths for the given scene.
-
-    Args:
-        scene (str): The name of the scene to be processed.
-        args (argparse.Namespace): The parsed command line arguments.
-
-    Returns:
-        List[str]: A list of image paths for the given scene.
-    """
-    scene_path = os.path.join(args.image_path, scene)
-    if not os.path.exists(scene_path):
-        raise ValueError(f"Scene does not exist: {scene_path}")
-
-    image_paths = [fname for fname in os.listdir(scene_path)]
-
-    # TODO: filter
-
-    return image_paths
-
-
-def get_model_dir(scene: str, model: ModelType, args: argparse.Namespace) -> Path:
-    """Return the path to the given scene.
-
-    Args:
-        scene (str): The name of the scene to be processed.
-        args (argparse.Namespace): The parsed command line arguments.
-
-    Returns:
-        str: The path to the given scene.
-    """
-    model_dir = None
-
-    if model == ModelType.SPARSE:
-        model_dir = os.path.join(args.data_path, args.sparse_path, scene)
-    elif model == ModelType.DENSE:
-        model_dir = os.path.join(args.data_path, args.dense_path, scene)
-    else:
-        raise ValueError(f"Unknown model type: {model}")
-
-    if not os.path.exists(model_dir):
-        raise ValueError(f"Model does not exist at: {model_dir}")
-
-    return Path(model_dir)
-
-
 def get_image_dir(scene: str, args: argparse.Namespace) -> Path:
     """Return the path to the given scene.
 
@@ -135,3 +84,73 @@ def get_image_dir(scene: str, args: argparse.Namespace) -> Path:
         raise ValueError(f"Image directory does not exist at: {image_dir}")
 
     return Path(image_dir)
+
+
+def model_exists(path: Path) -> bool:
+    """Check if the model exists.
+
+    Args:
+        path (Path): Path to the model.
+
+    Returns:
+        True if the model exists, False otherwise.
+    """
+    try:
+        pycolmap.Reconstruction(path)
+        return True
+    except ValueError:
+        return False
+
+
+# def make_gif(store_path: str, movie_path: str):
+#     """Crashes when used with many more frames than 50."""
+#     frames = [Image.open(image) for image in sorted(glob.glob(f"{store_path}/*.png"))]
+#     frame_one = frames[0]
+#     frame_one.save(
+#         movie_path, format="GIF", append_images=frames, save_all=True, duration=10, loop=0
+#     )
+
+# def get_scene_image_paths(scene: str, args: argparse.Namespace) -> List[str]:
+#     """Return a list of image paths for the given scene.
+
+#     Args:
+#         scene (str): The name of the scene to be processed.
+#         args (argparse.Namespace): The parsed command line arguments.
+
+#     Returns:
+#         List[str]: A list of image paths for the given scene.
+#     """
+#     scene_path = os.path.join(args.image_path, scene)
+#     if not os.path.exists(scene_path):
+#         raise ValueError(f"Scene does not exist: {scene_path}")
+
+#     image_paths = [fname for fname in os.listdir(scene_path)]
+
+#     # TODO: filter
+
+#     return image_paths
+
+
+# def get_model_dir(scene: str, model: ModelType, args: argparse.Namespace) -> Path:
+#     """Return the path to the given scene.
+
+#     Args:
+#         scene (str): The name of the scene to be processed.
+#         args (argparse.Namespace): The parsed command line arguments.
+
+#     Returns:
+#         str: The path to the given scene.
+#     """
+#     model_dir = None
+
+#     if model == ModelType.SPARSE:
+#         model_dir = os.path.join(args.data_path, args.sparse_path, scene)
+#     elif model == ModelType.DENSE:
+#         model_dir = os.path.join(args.data_path, args.dense_path, scene)
+#     else:
+#         raise ValueError(f"Unknown model type: {model}")
+
+#     if not os.path.exists(model_dir):
+#         raise ValueError(f"Model does not exist at: {model_dir}")
+
+#     return Path(model_dir)
