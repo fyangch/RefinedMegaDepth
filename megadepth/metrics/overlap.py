@@ -20,8 +20,8 @@ def sparse_overlap(reconstruction: pycolmap.Reconstruction) -> xr.DataArray:
     """Computes the sparse overlap metric between a list of images.
 
     For each pair of images (i,j), this score indicates the percentage of sparse features in image i
-    that are also contained in the image j. If i=j, the score is simply 100. Each score is an
-    integer in the range [0, 100].
+    that are also contained in the image j. If i=j, the score is simply 1. Each score is a float in
+    the range [0, 1].
     The computation of this score is based on:
     https://github.com/mihaidusmanu/d2-net/blob/master/megadepth_utils/preprocess_scene.py#L202
 
@@ -42,7 +42,7 @@ def sparse_overlap(reconstruction: pycolmap.Reconstruction) -> xr.DataArray:
         img_to_ids[i] = {p.point3D_id for p in img.get_valid_points2D()}
 
     # compute overlap scores for each image pair
-    scores = np.full((N, N), 100, dtype=np.int8)
+    scores = np.full((N, N), 1)
     for i in tqdm(range(N), desc="Computing sparse overlap...", ncols=80):
         for j in range(i + 1, N):
             # compute number of common 3D point IDs
@@ -51,8 +51,8 @@ def sparse_overlap(reconstruction: pycolmap.Reconstruction) -> xr.DataArray:
             n_common_ids = len(ids_1.intersection(ids_2))
 
             # set overlap scores
-            scores[i, j] = np.rint(100 * n_common_ids / len(ids_1))
-            scores[j, i] = np.rint(100 * n_common_ids / len(ids_2))
+            scores[i, j] = np.rint(1 * n_common_ids / len(ids_1))
+            scores[j, i] = np.rint(1 * n_common_ids / len(ids_2))
 
     # create and return data array
     coords = {"img1": image_fns, "img2": image_fns}
@@ -76,7 +76,7 @@ def _compute_dense_row(
     images = reconstruction.images
     N = len(images)
 
-    row = np.full((N,), 100, dtype=np.int8)
+    row = np.full((N,), 1)
 
     # load first image, camera and depth map
     image_1 = images[k1]
@@ -93,6 +93,10 @@ def _compute_dense_row(
     valid_depth_mask = depth_1 > 0.0
     depth_1 = depth_1[valid_depth_mask]
     points_2d = points_2d[valid_depth_mask]
+
+    # return if there are no valid depth values
+    if len(depth_1) == 0:
+        return (i, np.zeros((N,)))
 
     # number of dense features we are considering for the score computation
     n_features = depth_1.size
@@ -113,6 +117,11 @@ def _compute_dense_row(
         image_2 = images[k2]
         camera_2 = cameras[image_2.camera_id]
         depth_map_2 = load_depth_map(os.path.join(depth_path, f"{image_2.name}.geometric.bin"))
+
+        # skip if one of the depth maps is empty
+        if len(depth_map_2) == 0 or len(depth_map_1) == 0:
+            row[j] = 0
+            continue
 
         # project all 3D points to image 2 to obtain 2D points and associated depth values
         proj_points_2d, proj_depths, proj_mask = forward_project(
@@ -144,22 +153,22 @@ def _compute_dense_row(
             n_inliners = np.count_nonzero(abs_rel_error < rel_thresh)
 
         # final score
-        row[j] = np.rint(100 * n_inliners / n_features)
+        row[j] = n_inliners / n_features
 
     return (i, row)  # add row index because the tasks for each row don't finish in-order
 
 
 def dense_overlap(
     paths: DictConfig,
-    downsample: int = 50,
+    downsample: int = 10,
     rel_thresh: float = 0.03,
     cosine_weighted: bool = False,
 ) -> xr.DataArray:
     """Computes the dense overlap metric between a list of images.
 
     For each pair of images (i,j), this score indicates the fraction of dense features in image i
-    that are also contained in the image j. If i=j, the score is simply 100. Each score is an
-    integer in the range [0, 100].
+    that are also contained in the image j. If i=j, the score is simply 1. Each score is an
+    float in the range [0, 1].
 
     Args:
         paths (DictConfig): Data paths.
@@ -185,10 +194,11 @@ def dense_overlap(
     )
 
     # compute overlap scores for each image pair
-    scores = np.full((N, N), 100, dtype=np.int8)
-    with ProcessPoolExecutor() as executor:
-        logging.info(f"Using {os.cpu_count()} workers to compute the dense overlap.")
+    n_workers = min(os.cpu_count() or 16, 16)
+    logging.info(f"Using {n_workers} workers to compute the dense overlap.")
 
+    scores = np.full((N, N), 1)
+    with ProcessPoolExecutor(max_workers=n_workers) as executor:
         futures = [
             executor.submit(_compute_dense_row, i, k1, **kwargs)
             for i, k1 in enumerate(images.keys())
