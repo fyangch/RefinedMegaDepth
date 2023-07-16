@@ -13,6 +13,7 @@ from tqdm import tqdm
 
 from megadepth.metrics.nighttime import run_day_night_classification
 from megadepth.metrics.overlap import dense_overlap, sparse_overlap
+from megadepth.utils.io import load_depth_map
 
 
 def collect_metrics(paths: DictConfig, config: DictConfig, model_type: str) -> Dict[str, Any]:
@@ -109,14 +110,18 @@ def calculate_completeness(reconstruction: pycolmap.Reconstruction, paths: DictC
     Returns:
         float: The completeness of the dense maps.
     """
+    depth_path = os.path.join(paths.dense, "stereo", "depth_maps")
     fnames = [img.name for img in reconstruction.images.values()]
+    fnames = [f"{fname}.geometric.bin" for fname in fnames]
+    fpaths = [os.path.join(depth_path, fname) for fname in fnames]
+
     vals = []
-    for fname in tqdm(fnames, desc="Calculating completeness", ncols=80):
-        if not os.path.exists(os.path.join(paths.dense, "stereo", fname)):
+    for fpath in tqdm(fpaths, desc="Calculating completeness", ncols=80):
+        if not os.path.exists(fpath):
             vals.append(0)
             continue
 
-        depth = np.load(os.path.join(paths.dense, "stereo", fname))
+        depth = load_depth_map(fpath)
         vals.append(np.sum(depth > 0) / depth.size)
 
     return np.mean(vals)

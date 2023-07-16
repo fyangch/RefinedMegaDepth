@@ -194,10 +194,11 @@ def dense_overlap(
             for i, k1 in enumerate(images.keys())
         ]
 
-        # TODO: tqdm doesn't show a progress bar here...
-        for future in tqdm(as_completed(futures), desc="Computing dense overlap...", ncols=80):
+        pbar = tqdm(total=len(futures), desc="Computing dense overlap...", ncols=80)
+        for future in as_completed(futures):
             index, row = future.result()
             scores[index, :] = row
+            pbar.update(1)
 
     # create and return data array
     coords = {"img1": image_fns, "img2": image_fns}
