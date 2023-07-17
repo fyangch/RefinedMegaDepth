@@ -23,4 +23,4 @@ matchers:
   model:
     name: lightglue
     features: disk
-    n_layers: 2
+    # n_layers: 2

@@ -12,7 +12,7 @@ from omegaconf import DictConfig
 
 from megadepth.metrics.metadata import collect_metrics
 from megadepth.postprocessing.cleanup import refine_depth_maps
-from megadepth.utils.preprocessing import delete_problematic_images, rotate_images
+from megadepth.utils.preprocessing import remove_problematic_images, rotate_images
 from megadepth.utils.utils import time_function
 
 
@@ -46,7 +46,8 @@ class Pipeline:
         """Preprocess all images."""
         self.log_step("Preprocessing images...")
 
-        delete_problematic_images(self.paths)
+        if self.config.preprocessing.remove_problematic_images:
+            remove_problematic_images(self.paths)
 
         if self.config.preprocessing.rotate_images:
             rotate_images(self.paths)

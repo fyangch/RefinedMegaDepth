@@ -25,10 +25,11 @@ steps:
   - compute_metrics
 
 preprocessing:
+  remove_problematic_images: true
   rotate_images: true
 
 retrieval:
-  n_matches: 500
+  n_matches: 300
 
 overwrite: false
 

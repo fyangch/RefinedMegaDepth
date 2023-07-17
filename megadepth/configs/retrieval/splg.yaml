@@ -25,4 +25,4 @@ matchers:
   model:
     name: lightglue
     features: superpoint
-    n_layers: 2
+    # n_layers: 2
