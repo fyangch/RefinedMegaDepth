@@ -1,0 +1,26 @@
+name: retrieval-disk
+output: global-feats-netvlad
+model:
+  name: netvlad
+preprocessing:
+  resize_max: 1024
+
+min_matches: 40
+
+features:
+  name: disk
+  output: retrieval-disk
+  model:
+    name: disk
+    max_keypoints: 512
+  preprocessing:
+    grayscale: false
+    resize_max: 512
+
+matchers:
+  name: lightglue_disk
+  output: "retrieval-disk-lightglue"
+  model:
+    name: lightglue
+    features: disk
+    n_layers: 2

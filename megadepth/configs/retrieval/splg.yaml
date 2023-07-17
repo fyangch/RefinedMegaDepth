@@ -1,0 +1,28 @@
+name: retrieval-splg
+output: global-feats-netvlad
+model:
+  name: netvlad
+preprocessing:
+  resize_max: 1024
+
+min_matches: 40
+
+features:
+  name: superpoint
+  output: retrieval-sp
+  model:
+    name: superpoint
+    nms_radius: 3
+    max_keypoints: 512
+  preprocessing:
+    grayscale: true
+    resize_max: 512
+    resize_force: true
+
+matchers:
+  name: lightglue_sp
+  output: "retrieval-splg"
+  model:
+    name: lightglue
+    features: superpoint
+    n_layers: 2

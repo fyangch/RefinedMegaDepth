@@ -2,7 +2,6 @@ scene: ??? # mandatory value to be passed as a command line arg
 model_name: ""
 data_path: data
 
-# TODO: add support for ensembles
 defaults:
   - paths
   - ensembles:
@@ -10,7 +9,7 @@ defaults:
       - sift
       - disk
   - retrieval:
-      - netvlad
+      - disk
   - refinement:
       - pixsfm_low_memory
   - override hydra/job_logging: custom
@@ -29,7 +28,7 @@ preprocessing:
   rotate_images: true
 
 retrieval:
-  n_matches: 50
+  n_matches: 500
 
 overwrite: false
 
