@@ -108,6 +108,8 @@ class Pipeline:
             image_dir=self.paths.dense / "images",
             depth_map_dir=self.paths.dense / "stereo" / "depth_maps",
             output_dir=self.paths.results,
+            max_size=self.config.postprocessing.max_size,
+            segmentation_model=self.config.postprocessing.segmentation_model,
         )
 
     def compute_metrics(self) -> None:

@@ -31,6 +31,10 @@ preprocessing:
 retrieval:
   n_matches: 50
 
+postprocessing:
+  max_size: 1600 # during image processing steps
+  segmentation_model: segformer # segformer, beit or hrnet
+
 overwrite: false
 
 logging:

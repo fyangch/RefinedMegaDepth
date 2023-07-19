@@ -17,6 +17,7 @@ def refine_depth_maps(
     image_dir: Path,
     depth_map_dir: Path,
     output_dir: Path,
+    max_size: int = 1600,
     segmentation_model: str = "segformer",
 ) -> None:
     """Refine the depth maps and save the final depth maps, ordinal maps and segmentation maps.
@@ -25,6 +26,8 @@ def refine_depth_maps(
         image_dir (Path): Path to the directory that contains the undistorted RGB images.
         depth_map_dir (Path): Path to the directory that contains the raw depth maps.
         output_dir (Path): Path to the output directory.
+        max_size (int): The larger depth map dimension will be scaled to this size during image
+            processing steps. Defaults to 1600.
         segmentation_model (str): Which segmentation model to use. Defaults to "segformer".
     """
     # create subdirectories for the refined depth maps, ordinal maps and segmentation maps
@@ -40,9 +43,9 @@ def refine_depth_maps(
 
         segmentation_map = model.get_segmentation_map(image)
 
-        depth_map = filter_unstable_depths(depth_map)
+        depth_map = filter_unstable_depths(depth_map, max_size=max_size)
         depth_map = apply_semantic_filtering(depth_map, segmentation_map)
-        depth_map = erode_and_remove(depth_map)
+        depth_map = erode_and_remove(depth_map, max_size=max_size)
 
         ordinal_map = get_ordinal_map(depth_map, segmentation_map)
 
