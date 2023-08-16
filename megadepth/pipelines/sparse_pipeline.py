@@ -76,7 +76,7 @@ class SparsePipeline(Pipeline):
 
         with open(self.paths.pairs, "w") as f:
             for p in new_pairs:
-                f.write(f"{p[0]} {p[1]}")
+                f.write(f"{p[0]} {p[1]}\n")
 
     def get_pairs(self) -> None:
         """Get pairs of images to match."""
