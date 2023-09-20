@@ -1,16 +1,18 @@
 """Calculate pose uncertainty for a reconstruction."""
 import sys
-from typing import Optional
 
 sys.path.append("external_dependencies/pyceres/")
 
 import argparse
+import json
 import os
+from typing import Optional
 
 import matplotlib.pyplot as plt
 import numpy as np
 import pyceres
 import pycolmap
+from tqdm import tqdm
 
 from megadepth.utils.projections import get_camera_poses
 
@@ -167,6 +169,7 @@ def solve(prob: pyceres.Problem) -> None:
     options.linear_solver_type = pyceres.LinearSolverType.DENSE_QR
     options.minimizer_progress_to_stdout = True
     options.num_threads = -1
+    options.max_num_iterations = 0
     summary = pyceres.SolverSummary()
     pyceres.solve(options, prob, summary)
     print(summary.BriefReport())
@@ -183,7 +186,9 @@ def opt_poses(rec: pycolmap.Reconstruction) -> pyceres.Problem:
     """
     prob = pyceres.Problem()
     loss = pyceres.TrivialLoss()
-    for im in rec.images.values():
+    for im in tqdm(
+        rec.images.values(), total=len(rec.images), desc="Adding image residuals", ncols=80
+    ):
         cam = rec.cameras[im.camera_id]
         for p in im.points2D:
             cost = pyceres.factors.BundleAdjustmentCost(cam.model_id, p.xy)
@@ -267,6 +272,11 @@ def run(reconstruction: pycolmap.Reconstruction, args: argparse.Namespace) -> No
 
     # plot
     plot_uncs(reconstruction, uncs, cam_tvecs, 0, args.out)
+
+    json_file = dict(zip(keys, uncs))
+    if args.out is not None:
+        with open(os.path.join(args.out, "uncertainties.json"), "w") as f:
+            json.dump(json_file, f, indent=4)
 
 
 def main():

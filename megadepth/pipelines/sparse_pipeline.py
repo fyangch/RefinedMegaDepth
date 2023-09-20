@@ -124,6 +124,10 @@ class SparsePipeline(Pipeline):
         """Concatenate features and matches."""
         self.log_step("Creating ensemble")
 
+        if self.paths.features.exists() and self.paths.matches.exists() and not self.overwrite:
+            logging.info("Ensemble already exists. Skipping...")
+            return
+
         for i, ens in enumerate(self.config.ensembles.values()):
             features_path = self.paths.features.parent / f"{ens.features.output}.h5"
             matches_path = self.paths.matches.parent / f"{ens.matchers.output}.h5"
