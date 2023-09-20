@@ -16,7 +16,7 @@ from tqdm import tqdm
 
 from megadepth.utils.projections import get_camera_poses
 from megadepth.visualization.camera_trajectories import surround_view
-from megadepth.visualization.view_projections import align_models, pca_matrix
+from megadepth.visualization.view_projections import pca_matrix
 from megadepth.visualization.view_sparse_model import pcd_from_colmap
 
 NUM_FRAMES = 600
@@ -121,6 +121,10 @@ def render_frames(
             bool: Default return value.
         """
         ctr = vis.get_view_control()
+        # print(type(ctr))
+        # cam = ctr.convert_to_pinhole_camera_parameters()
+        # print(type(cam))
+        # exit()
 
         # Stop rotating after 360 degrees
         glb = render_frames
@@ -131,6 +135,9 @@ def render_frames(
             camera.extrinsic = render_frames.extrinsics[glb.idx]
             ctr.convert_from_pinhole_camera_parameters(camera)
 
+            ctr.set_constant_z_near(-100)
+
+            # print(camera.get_near(), camera.get_far())
         else:
             vis.close()
             # vis.register_animation_callback(None)
@@ -155,7 +162,7 @@ def render_frames(
     vis.create_window(visible=show_window)
 
     # Add the point cloud with support at least 1% of the images
-    vis.add_geometry(point_cloud)
+    vis.add_geometry(point_cloud, reset_bounding_box=False)
 
     if cameras is not None:
         for cam in cameras:
@@ -218,6 +225,7 @@ def visualize_point_cloud(
         extrinsics (list): List of camera extrinsics.
         min_track_length (int): Minimum track length.
         args (argparse.Namespace): Arguments.
+        color (int, optional): Color index for tab10. Defaults to -1.
 
     Raises:
         ValueError: If the model type is unknown.
@@ -308,9 +316,9 @@ def main(args: argparse.Namespace):
         baseline_model = None
 
     if baseline_model is not None:
-        super_model = align_models(
-            reconstruction_anchor=baseline_model, reconstruction_align=super_model
-        )
+        # super_model = align_models(
+        #     reconstruction_anchor=baseline_model, reconstruction_align=super_model
+        # )
         pca_transform = compute_pca_on_camera_poses(super_model)
         scale = compute_scale_on_points(baseline_model)
 
@@ -324,11 +332,11 @@ def main(args: argparse.Namespace):
     logging.info(f"Scale: {scale}")
     logging.info(f"PCA transform:\n{pca_transform}")
 
-    # # turn 180 degrees around x
-    # rot = np.eye(4)
-    # rot[1, 1] = -1
-    # rot[2, 2] = -1
-    # pca_transform = pca_transform @ rot
+    # turn 180 degrees around x
+    rot = np.eye(4)
+    rot[1, 1] = -1
+    rot[2, 2] = -1
+    pca_transform = pca_transform @ rot
 
     # logging.info(f"(points) Baseline scale: {compute_scale_on_points(baseline_model)}")
     # logging.info(f"(points) Super scale:    {compute_scale_on_points(super_model)}")
@@ -346,12 +354,12 @@ def main(args: argparse.Namespace):
 
     min_track_length = np.ceil(len(super_model.images) * 0.005)  # 0.5% of images
     if args.color == -1:
-        visualize_point_cloud(baseline_model, "baseline", extrinsics, min_track_length, args)
+        # visualize_point_cloud(baseline_model, "baseline", extrinsics, min_track_length, args)
         visualize_point_cloud(super_model, args.model_name, extrinsics, min_track_length, args)
     else:
-        visualize_point_cloud(
-            baseline_model, "baseline", extrinsics, min_track_length, args, color=0
-        )
+        # visualize_point_cloud(
+        #     baseline_model, "baseline", extrinsics, min_track_length, args, color=0
+        # )
         visualize_point_cloud(
             super_model, args.model_name, extrinsics, min_track_length, args, color=args.color
         )

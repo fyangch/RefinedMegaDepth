@@ -3,3 +3,4 @@ output: "matches-superpoint-lightglue"
 model:
   name: lightglue
   features: superpoint
+  filter_threshold: 0.3

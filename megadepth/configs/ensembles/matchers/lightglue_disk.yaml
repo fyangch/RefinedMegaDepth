@@ -3,3 +3,4 @@ output: "matches-disk-lightglue"
 model:
   name: lightglue
   features: disk
+  filter_threshold: 0.3

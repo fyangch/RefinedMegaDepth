@@ -89,6 +89,7 @@ def filter_unstable_depths(
 
     # apply median filter
     median = cv2.medianBlur(depth_map, kernel_size)
+    # median = cv2.blur(depth_map, (kernel_size, kernel_size))
 
     # a depth value D is unstable if max(D/M, M/D) > threshold where M is the corresponding median
     unstable_1 = median > threshold * depth_map  # avoid division by 0....

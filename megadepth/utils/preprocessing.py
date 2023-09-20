@@ -16,7 +16,7 @@ from omegaconf import DictConfig
 from tqdm import tqdm
 
 
-def delete_problematic_images(paths: DictConfig) -> None:
+def remove_problematic_images(paths: DictConfig) -> None:
     """Remove corrupted and other problematic images.
 
     Args:

@@ -5,7 +5,7 @@ paths:
   features_retrieval: ${.data}/features/${..retrieval.name}.h5
   pairs: ${.data}/matches/retrieval/${..retrieval.name}-${..retrieval.n_matches}.txt
 
-  features: ${.data}/features/features.h5
+  features: ${.data}/features/${..model_name}.h5
   matches: ${.data}/matches/${..model_name}.h5
 
   sparse: ${.data}/sparse/${..model_name}
