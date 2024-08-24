@@ -3,17 +3,17 @@
 import logging
 import os
 
-import albumentations as albu
+import albumentations  # TODO: Remove dependency
 import cv2
 import numpy as np
 import pycolmap
 import torch
-from check_orientation.pre_trained_models import create_model
+from check_orientation.pre_trained_models import create_model  # TODO: Remove dependency
 from hloc.reconstruction import create_empty_db, get_image_ids, import_images
-from iglovikov_helper_functions.dl.pytorch.utils import tensor_from_rgb_image
-from iglovikov_helper_functions.utils.image_utils import load_rgb
 from omegaconf import DictConfig
 from tqdm import tqdm
+
+from megadepth.utils.io import load_image
 
 
 def remove_problematic_images(paths: DictConfig) -> None:
@@ -53,13 +53,15 @@ def rotate_images(paths: DictConfig) -> None:
     model = create_model("swsl_resnext50_32x4d")
     model.eval()
 
-    transform = albu.Compose([albu.Resize(height=224, width=224), albu.Normalize()])
+    transform = albumentations.Compose(
+        [albumentations.Resize(height=224, width=224), albumentations.Normalize()]
+    )
     image_paths = [paths.images / fn for fn in os.listdir(paths.images)]
 
     n_rotated = 0
     for path in tqdm(image_paths, desc="Rotating images...", ncols=80):
-        image = transform(image=load_rgb(path))["image"]
-        tensor = tensor_from_rgb_image(image)
+        image = transform(image=load_image(path))["image"]
+        tensor = torch.Tensor(image).permute(2, 0, 1).float() / 255
         with torch.no_grad():
             pred = model(tensor.unsqueeze(dim=0)).numpy().flatten()
 

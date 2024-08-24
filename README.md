@@ -1,84 +1,65 @@
-# RefinedMegaDepth
+<p align="center">
+  <h1 align="center"><ins>Improving the Ground-Truth:</ins><br>MegaDepth in 2023</h1>
+  <p align="center">
+    <a href="https://www.linkedin.com/in/alexander-veicht/">Alexander Veicht</a>
+    ·
+    <a href="https://www.linkedin.com/in/felix-yang-ch/">Felix Yang</a>
+    ·
+    <a href="https://www.linkedin.com/in/andri-horat/de">Andri Horat</a>
+    ·
+    <a href="https://www.linkedin.com/in/deep-desai-35943b196">Deep Desai</a>
+    ·
+    <a href="https://www.linkedin.com/in/philipplindenberger/">Philipp Lindenberger</a>
+  </p>
+  <h2 align="center">
+    <a href="Report.pdf" align="center">Report</a> |
+    <a href="Poster.pdf" align="center">Poster</a>
+  </h2>
+  
+</p>
+<p align="center">
+    <a href=""><img src="assets/teaser.png" alt="example" width=80%></a> <!--TODO: update link-->
+    <br>
+    <em>
+      Our reimplemented and improved pipeline for MegaDepth generates high-quality depth maps 
+      <br>
+      and camera poses for unstructured images of popular tourist landmarks.
+    </em>
+</p>
 
 MegaDepth, a dataset of unstructured images featuring popular tourist landmarks, was introduced in 2018. By leveraging structure from motion (SfM) and multi-view stereo (MVS) techniques along with data cleaning methods, MegaDepth generates camera poses and depth maps for each image. Nonetheless, the outcomes suffer from limitations like degenerate camera poses, incomplete depth maps, and inaccuracies caused by unregistered images or noise in the pipeline. Despite these flaws, MegaDepth has become an industry-standard dataset for training various computer vision models, including but not limited to single-view depth estimation, local features, feature matching, and multi-view refinement. This is primarily due to the diversity of scenes, occlusions, and appearance changes captured in the dataset, enabling the models to generalize well.
-Our project aims to systematically address these problems to establish a refined MegaDepth ground-truth (GT) pipeline using recent deep learning-based methods such as Hierarchical Localization (hloc) and Pixel-Perfect Structure-from-Motion (pixSfM).
+Our project aims to systematically address these problems to establish a refined MegaDepth ground-truth (GT) pipeline using recent methods such as the [hloc](https://github.com/cvg/Hierarchical-Localization) and [Pixel-Perfect Structure-from-Motion](https://github.com/cvg/pixel-perfect-sfm).
 
-# Team
-| Name                 | Email                   |
-| -------------------- | ----------------------- |
-| **Andri Horat**      | horatan@student.ethz.ch |
-| **Alexander Veicht** | veichta@student.ethz.ch |
-| **Deep Desai**       | ddesai@student.ethz.ch  |
-| **Felix Yang**       | fyang@student.ethz.ch   |
 
-# Setup
+## Setup
 
-## Linux
-Make sure that you have [conda](https://docs.conda.io/en/latest/miniconda.html) or [pip](https://pip.pypa.io/en/stable/installing/) installed.
+Clone and install the repository by running the following commands:
 
-### Pip
-Make sure that you have python=3.9 installed. Create a new virtual environment using 
 ```bash
-python3 -m venv venv
+git clone https://github.com/fyangch/RefinedMegaDepth.git
+cd RefinedMegaDepth
+pip install -e .
 ```
 
-Activate the environment:
+## First Reconstruction
+
+Download the [south building](https://demuc.de/colmap/datasets) dataset and extract it to the `data` folder.
+
 ```bash
-source venv/bin/activate
+mkdir data
+wget https://demuc.de/colmap/datasets/south-building.zip -O data/south-building.zip
+unzip data/south-building.zip -d data
+rm -rf data/south-building.zip data/south-building/sparse data/south-building/database.db
 ```
 
-Install the dependencies:
+Run the following command to start the pipeline:
 ```bash
-make install_pip
+python -m megadepth.reconstruction scene=south-building
 ```
 
-### Conda
-Crate a new conda environment using python=3.9:
-```bash
-conda create -n megadepth python=3.9
-```
 
-Activate the environment:
-```bash
-conda activate megadepth
-```
+## Reconstructing Custom Scenes
 
-Install the dependencies:
-```bash
-make install_conda
-```
-
-## Apple M1
-Make sure you have [homebrew](https://brew.sh/) as well as [miniforge](https://github.com/conda-forge/miniforge) installed. Create a new conda environment using python=3.9:
-```bash
-conda create -n megadepth python=3.9
-```
-
-Activate the environment:
-```bash
-conda activate megadepth
-```
-
-Install the dependencies:
-```bash
-make install_m1
-```
-
-## Install repository
-
-```pip install -e .```
-
-Maybe we also need to do this:
-1. Install `build` and `twine` packages from pip:
-   ```shell
-   pip install build twine 
-   ``` 
-2. Build the package:
-   ```shell
-   python -m build
-   ``` 
-
-## Data
 The images are expected to be split by scenes and stored in the following format:
 ```
 data
@@ -94,7 +75,15 @@ data
 │   │   ├── ...
 ├── ...
 ```
+
+You can simply run the the reconstruction pipeline by specifying the scene name:
+
+```bash
+python -m megadepth.reconstruction scene=scene_1
+```
+
 The pipeline will read the images from folder and create the following folders for the outputs:
+
 ```
 data
 ├── scene_1
@@ -110,3 +99,7 @@ data
 ├── ...
 ```
 
+## Next Steps
+
+- [ ] Remove dependencies (xarray, mit_semseg, ...)
+- [ ] Check for licenses (segmentation models etc.)

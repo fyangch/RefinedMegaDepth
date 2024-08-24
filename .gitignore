@@ -1,13 +1,6 @@
 # folders
 data/**
 **.DS_Store
-colmap/**
-pycolmap/**
-external_dependencies/**
-plots/**
-logs/**
-pretrained/**
-notebooks/pretrained/**
 outputs/
 
 # Byte-compiled / optimized / DLL files

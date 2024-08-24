@@ -1,4 +1,5 @@
 """Abstract pipeline class."""
+
 import datetime
 import json
 import logging
@@ -8,12 +9,19 @@ from abc import abstractmethod
 from typing import Optional
 
 import pycolmap
+from hloc import reconstruction
 from omegaconf import DictConfig
 
 from megadepth.metrics.metadata import collect_metrics
 from megadepth.postprocessing.cleanup import refine_depth_maps
+from megadepth.utils.io import model_exists
 from megadepth.utils.preprocessing import remove_problematic_images, rotate_images
 from megadepth.utils.utils import time_function
+
+try:
+    from pixsfm.refine_hloc import PixSfM
+except ImportError:
+    PixSfM = None
 
 
 class Pipeline:
@@ -67,10 +75,41 @@ class Pipeline:
         """Match features between images."""
         pass
 
-    @abstractmethod
     def sfm(self) -> None:
-        """Run Structure from Motion."""
-        pass
+        """Run SfM."""
+        self.log_step("Run SfM")
+
+        if model_exists(self.paths.sparse) and not self.overwrite:
+            logging.info("Model already exists. Skipping...")
+            self.sparse_model = pycolmap.Reconstruction(self.paths.sparse)
+            return
+
+        os.makedirs(self.paths.sparse.parent, exist_ok=True)
+
+        if PixSfM:
+            refiner = PixSfM(conf=self.config.refinement)
+            model, outputs = refiner.run(
+                output_dir=self.paths.sparse,
+                image_dir=self.paths.images,
+                pairs_path=self.paths.pairs,
+                features_path=self.paths.features,
+                matches_path=self.paths.matches,
+                cache_path=self.paths.cache,
+                verbose=self.config.logging.verbose,
+            )
+        else:
+            logging.warning("pixsfm not installed. Skipping refinement.")
+            model = reconstruction.main(
+                sfm_dir=self.paths.sparse,
+                image_dir=self.paths.images,
+                pairs=self.paths.pairs,
+                features_path=self.paths.features,
+                matches_path=self.paths.matches,
+            )
+
+        self.sparse_model = model
+
+        logging.debug(f"Outputs:\n{outputs}")
 
     def mvs(self) -> None:
         """Run Multi-View Stereo."""

@@ -1,5 +1,6 @@
 defaults:
   - default
+  - _self_
 
 steps:
   - preprocess

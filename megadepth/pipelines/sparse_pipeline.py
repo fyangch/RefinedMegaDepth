@@ -7,12 +7,10 @@ import shutil
 import pycolmap
 from hloc import extract_features, match_features, pairs_from_exhaustive, pairs_from_retrieval
 from hloc.utils.io import get_matches, list_h5_names
-from pixsfm.refine_hloc import PixSfM
 from tqdm import tqdm
 
 from megadepth.pipelines.pipeline import Pipeline
 from megadepth.utils.concatenate import concat_features, concat_matches
-from megadepth.utils.io import model_exists
 
 
 class SparsePipeline(Pipeline):
@@ -200,29 +198,3 @@ class SparsePipeline(Pipeline):
 
         # create final ensemble by concatenating features and matches
         self.concat_features_and_matches()
-
-    def sfm(self) -> None:
-        """Run SfM."""
-        self.log_step("Run SfM")
-
-        if model_exists(self.paths.sparse) and not self.overwrite:
-            logging.info("Model already exists. Skipping...")
-            self.sparse_model = pycolmap.Reconstruction(self.paths.sparse)
-            return
-
-        os.makedirs(self.paths.sparse.parent, exist_ok=True)
-
-        refiner = PixSfM(conf=self.config.refinement)
-        model, outputs = refiner.run(
-            output_dir=self.paths.sparse,
-            image_dir=self.paths.images,
-            pairs_path=self.paths.pairs,
-            features_path=self.paths.features,
-            matches_path=self.paths.matches,
-            cache_path=self.paths.cache,
-            verbose=self.config.logging.verbose,
-        )
-
-        self.sparse_model = model
-
-        logging.debug(f"Outputs:\n{outputs}")

@@ -1,4 +1,5 @@
 """Calculate pose uncertainty for a reconstruction."""
+
 import sys
 
 sys.path.append("external_dependencies/pyceres/")

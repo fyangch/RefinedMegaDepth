@@ -1,10 +1,9 @@
+pycolmap
 torch
-numpy
 matplotlib
 pandas
+tqdm
 scikit-image
 transformers
 hydra-core
-check_orientation
-xarray
-git+https://github.com/CSAILVision/semantic-segmentation-pytorch.git@master
+git+https://github.com/veichta/day-night-classification.git

@@ -5,14 +5,14 @@ data_path: data
 defaults:
   - paths
   - ensembles:
-      - splg
+      - disk
       - sift
-      - disk
   - retrieval:
-      - disk
+      - netvlad
   - refinement:
       - pixsfm_low_memory
   - override hydra/job_logging: custom
+  - _self_
 
 steps:
   - preprocess
@@ -26,10 +26,10 @@ steps:
 
 preprocessing:
   remove_problematic_images: true
-  rotate_images: true
+  rotate_images: false
 
 retrieval:
-  n_matches: 300
+  n_matches: 50
 
 postprocessing:
   max_size: 1600 # during image processing steps

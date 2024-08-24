@@ -1,4 +1,5 @@
 """Script to create comparisions between megadepth and our depth maps."""
+
 import argparse
 import glob
 import logging

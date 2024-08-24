@@ -1,0 +1,65 @@
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "megadepth"
+version = "1.0"
+description = ""
+authors = [
+    { name = "Alexander Veicht" },
+    { name = "Felix Yang" },
+    { name = "Andri Horat" },
+    { name = "Deep Desai" },
+    { name = "Philipp Lindenberger" },
+]
+readme = "README.md"
+requires-python = ">=3.9"
+license = { file = "LICENSE" }
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: OS Independent",
+]
+urls = { Repository = "https://github.com/fyangch/RefinedMegaDepth" }
+
+dependencies = [
+    "pycolmap",
+    "torch",
+    "torchvision",
+    "opencv-python",
+    "albumentations",
+    "matplotlib",
+    "pandas",
+    "tqdm",
+    "scikit-image",
+    "transformers",
+    "hydra-core",
+    "xarray",
+    "check_orientation",
+    "black",
+    "isort",
+    "flake8",
+    "mypy",
+    "dnc@git+https://github.com/veichta/day-night-classification.git",
+    "hloc@git+https://github.com/cvg/Hierarchical-Localization.git",
+    "mit_semseg@git+https://github.com/CSAILVision/semantic-segmentation-pytorch.git@master",
+]
+
+[tool.setuptools]
+packages = ["megadepth"]
+
+[tool.black]
+line-length = 100
+exclude = "(venv/|docs/|third_party/)"
+
+[tool.isort]
+profile = "black"
+line_length = 100
+atomic = true
+
+[tool.flake8]
+max-line-length = 100
+docstring-convention = "google"
+ignore = ["E203", "W503", "E402"]
+exclude = [".git", "__pycache__", "venv", "docs", "third_party", "scripts"]
