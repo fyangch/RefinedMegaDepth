@@ -97,19 +97,18 @@ class Pipeline:
                 cache_path=self.paths.cache,
                 verbose=self.config.logging.verbose,
             )
+            logging.debug(f"Outputs:\n{outputs}")
         else:
             logging.warning("pixsfm not installed. Skipping refinement.")
             model = reconstruction.main(
                 sfm_dir=self.paths.sparse,
                 image_dir=self.paths.images,
                 pairs=self.paths.pairs,
-                features_path=self.paths.features,
-                matches_path=self.paths.matches,
+                features=self.paths.features,
+                matches=self.paths.matches,
             )
 
         self.sparse_model = model
-
-        logging.debug(f"Outputs:\n{outputs}")
 
     def mvs(self) -> None:
         """Run Multi-View Stereo."""
@@ -119,23 +118,17 @@ class Pipeline:
 
         logging.info("Running undistort_images...")
         pycolmap.undistort_images(
-            output_path=self.paths.dense,
-            input_path=self.paths.sparse,
-            image_path=self.paths.images,
-            verbose=self.config.logging.verbose,
+            output_path=self.paths.dense, input_path=self.paths.sparse, image_path=self.paths.images
         )
 
         logging.info("Running patch_match_stereo...")
-        pycolmap.patch_match_stereo(
-            workspace_path=self.paths.dense,
-            verbose=self.config.logging.verbose,
-        )
+        if not hasattr(pycolmap, "patch_match_stereo"):
+            raise ImportError("pycolmap needs to be compiled with CUDA for mvs.")
+        pycolmap.patch_match_stereo(workspace_path=self.paths.dense)
 
         logging.info("Running stereo_fusion...")
         pycolmap.stereo_fusion(
-            output_path=self.paths.dense / "dense.ply",
-            workspace_path=self.paths.dense,
-            verbose=self.config.logging.verbose,
+            output_path=self.paths.dense / "dense.ply", workspace_path=self.paths.dense
         )
 
     def postprocess(self) -> None:

@@ -1,4 +1,5 @@
 """Concatenate features and matches from two h5 files into one h5 file."""
+
 import logging
 from pathlib import Path
 from typing import Any, Dict, Tuple
@@ -25,11 +26,11 @@ def concat_features(features1: Path, features2: Path, out_path: Path) -> None:
     with h5.File(features1, "r") as f1:
         with h5.File(features2, "r") as f2:
             for img in tqdm(img_list, desc="concatenating features", ncols=80):
-                kpts1 = f1[img]["keypoints"] if img in f1.keys() else np.array([])
-                kpts2 = f2[img]["keypoints"] if img in f2.keys() else np.array([])
+                kpts1 = f1.get(img, {}).get("keypoints", np.array([]))
+                kpts2 = f2.get(img, {}).get("keypoints", np.array([]))
 
-                scores1 = f1[img]["scores"] if img in f1.keys() else np.array([])
-                scores2 = f2[img]["scores"] if img in f2.keys() else np.array([])
+                scores1 = f1.get(img, {}).get("scores", np.array([]))
+                scores2 = f2.get(img, {}).get("scores", np.array([]))
 
                 n_feats1 = len(kpts1) if img in f1.keys() else 0
                 n_feats2 = len(kpts2) if img in f2.keys() else 0

@@ -12,13 +12,12 @@
     <a href="https://www.linkedin.com/in/philipplindenberger/">Philipp Lindenberger</a>
   </p>
   <h2 align="center">
-    <a href="Report.pdf" align="center">Report</a> |
-    <a href="Poster.pdf" align="center">Poster</a>
+    <a href="report.pdf" align="center">Report</a> | <a href="poster.pdf" align="center">Poster</a>
   </h2>
   
 </p>
 <p align="center">
-    <a href=""><img src="assets/teaser.png" alt="example" width=80%></a> <!--TODO: update link-->
+    <a><img src="assets/teaser.png" alt="example" width=80%></a>
     <br>
     <em>
       Our reimplemented and improved pipeline for MegaDepth generates high-quality depth maps 
@@ -101,5 +100,7 @@ data
 
 ## Next Steps
 
+- [ ] Fix rotations
+- [ ] Test mvs
 - [ ] Remove dependencies (xarray, mit_semseg, ...)
 - [ ] Check for licenses (segmentation models etc.)

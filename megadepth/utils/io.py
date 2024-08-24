@@ -1,18 +1,12 @@
 """Several helper functions for IO."""
-import argparse
 
-# import glob
+import argparse
 import os
 from pathlib import Path
 
 import numpy as np
 import pycolmap
 from PIL import Image
-
-# from typing import List
-
-
-# from megadepth.utils.constants import ModelType
 
 
 def load_image(image_path: str) -> np.ndarray:
